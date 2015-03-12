@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Klaus Popp (MEN Mikro Elektronik GmbH) -->
+<package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="packagedesc.xsd">
+	<name>13m03406</name>
+	<description>MDIS5 driver package for MEN M34 and M35 M-Module</description>
+	<date>2009-10-20</date>
+	<revision>2.2</revision>
+	<docroot>DRIVERS/MDIS_LL/M034/DOC/main.html</docroot>
+	<modellist>
+		<model>
+			<hwname>M34</hwname>
+			<description>8 or 16 x 12 Bit Analog Inputs</description>
+			<devtype>MDIS</devtype>
+			<autoid>
+				<mmoduleid>0x53460022</mmoduleid>
+			</autoid>
+			<busif>M-Module</busif>
+		</model>
+		<model>
+			<hwname>M35</hwname>
+			<description>8 or 16 x 14 Bit Analog Inputs</description>
+			<devnameprefix>M35</devnameprefix>
+			<devtype>MDIS</devtype>
+			<autoid>
+				<mmoduleid>0x53460023</mmoduleid>
+			</autoid>
+			<busif>M-Module</busif>
+		</model>
+	</modellist>
+	<settinglist>
+		<setting>
+			<name>ID_CHECK</name>
+			<description>Define wether M-Module ID-PROM is checked</description>
+			<type>U_INT32</type>
+			<defaultvalue>1</defaultvalue>
+			<choises>
+				<choise>
+					<value>1</value>
+					<description>enable</description>
+				</choise>
+				<choise>
+					<value>0</value>
+					<description>disable -- ignore IDPROM</description>
+				</choise>
+			</choises>
+		</setting>
+		<setting>
+			<name>M34_SINGLE_ENDED</name>
+			<description>Define wether to use single ended or differential mode</description>
+			<type>U_INT32</type>
+			<defaultvalue>1</defaultvalue>
+			<choises>
+				<choise>
+					<value>0</value>
+					<description>differential, 8 channels</description>
+				</choise>
+				<choise>
+					<value>1</value>
+					<description>single ended, 16 channels</description>
+				</choise>
+			</choises>
+		</setting>
+		<setting>
+			<name>M34_DUMMY_READS</name>
+			<description>Number of additional dummy reads</description>
+			<type>U_INT32</type>
+			<defaultvalue>0</defaultvalue>
+			<maxvalue>10</maxvalue>
+		</setting>
+		<setting>
+			<name>M34_PREVENT_BUSERR</name>
+			<description>Prevent buserror if no external power supply present</description>
+			<type>U_INT32</type>
+			<defaultvalue>0</defaultvalue>
+			<choises>
+				<choise>
+					<value>0</value>
+					<description>bus error if no voltage supplied</description>
+				</choise>
+				<choise>
+					<value>1</value>
+					<description>no bus error if no voltage</description>
+				</choise>
+			</choises>
+		</setting>
+		<settingsubdir>
+			<name>RD_BUF</name>
+			<setting>
+				<name>MODE</name>
+				<description>read buffer mode</description>
+				<type>U_INT32</type>
+				<defaultvalue>0</defaultvalue>
+				<choises>
+					<choise>
+						<value>0</value>
+						<description>USER controlled buffer</description>
+					</choise>
+					<choise>
+						<value>1</value>
+						<description>MDIS controlled current buffer</description>
+					</choise>
+					<choise>
+						<value>2</value>
+						<description>MDIS controlled ring buffer</description>
+					</choise>
+					<choise>
+						<value>3</value>
+						<description>MDIS controlled ring buffer overwrite</description>
+					</choise>
+				</choises>
+			</setting>
+			<setting>
+				<name>SIZE</name>
+				<description>read buffer size in bytes</description>
+				<type>U_INT32</type>
+				<defaultvalue>320</defaultvalue>
+			</setting>
+			<setting>
+				<name>TIMEOUT</name>
+				<description>read buffer timeout in ms</description>
+				<type>U_INT32</type>
+				<defaultvalue>1000</defaultvalue>
+			</setting>
+			<setting>
+				<name>HIGHWATER</name>
+				<description>read buffer high water mark</description>
+				<type>U_INT32</type>
+				<defaultvalue>320</defaultvalue>
+			</setting>
+		</settingsubdir>
+		<settingsubdir rangestart="0" rangeend="15">
+			<name>CHANNEL_</name>
+			<setting>
+				<name>M34_GAIN</name>
+				<description>channel amplification</description>
+				<type>U_INT32</type>
+				<defaultvalue>0</defaultvalue>
+				<choises>
+					<choise>
+						<value>0</value>
+						<description>Gain 1</description>
+					</choise>
+					<choise>
+						<value>1</value>
+						<description>Gain 2</description>
+					</choise>
+					<choise>
+						<value>2</value>
+						<description>Gain 4</description>
+					</choise>
+					<choise>
+						<value>3</value>
+						<description>Gain 8</description>
+					</choise>
+				</choises>
+			</setting>
+			<setting>
+				<name>M34_BIPOLAR</name>
+				<description>channel acquisition type</description>
+				<type>U_INT32</type>
+				<defaultvalue>0</defaultvalue>
+				<choises>
+					<choise>
+						<value>0</value>
+						<description>unipolar</description>
+					</choise>
+					<choise>
+						<value>1</value>
+						<description>bipolar</description>
+					</choise>
+				</choises>
+			</setting>
+			<setting>
+				<name>M34_CH_RDBLK_IRQ</name>
+				<description>channel read at M34_BlockRead or M34_Irq</description>
+				<type>U_INT32</type>
+				<defaultvalue>0</defaultvalue>
+				<choises>
+					<choise>
+						<value>0</value>
+						<description>don't read channel</description>
+					</choise>
+					<choise>
+						<value>1</value>
+						<description>read channel</description>
+					</choise>
+				</choises>
+			</setting>
+		</settingsubdir>
+		<debugsetting mbuf="true"/>
+	</settinglist>
+	<swmodulelist>
+		<swmodule>
+			<name>m34</name>
+			<description>LL driver for M34/M35</description>
+			<type>Low Level Driver</type>
+			<makefilepath>M034/DRIVER/COM/driver.mak</makefilepath>
+		</swmodule>
+		<swmodule>
+			<name>m34_simp</name>
+			<description>Simple example program for the M34 driver</description>
+			<type>Driver Specific Tool</type>
+			<makefilepath>M034/EXAMPLE/M34_SIMP/COM/program.mak</makefilepath>
+		</swmodule>
+		<swmodule>
+			<name>m34_read</name>
+			<description>Universal tool for read M34/M35 channels</description>
+			<type>Driver Specific Tool</type>
+			<makefilepath>M034/TOOLS/M34_READ/COM/program.mak</makefilepath>
+		</swmodule>
+		<swmodule>
+			<name>m34_blkread</name>
+			<description>Universal tool for read M34/M35 channels blockwise</description>
+			<type>Driver Specific Tool</type>
+			<makefilepath>M034/TOOLS/M34_BLKREAD/COM/program.mak</makefilepath>
+		</swmodule>
+	</swmodulelist>
+</package>

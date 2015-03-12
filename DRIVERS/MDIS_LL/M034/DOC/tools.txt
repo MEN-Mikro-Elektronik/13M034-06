@@ -1,0 +1,85 @@
+Program Description
+===================
+Tue Dec 15 09:40:59 MEZ 1998
+ 
+Overwiew of all Programs
+------------------------
+
+m34_read         - Configure and read M34/M35 channel
+m34_blkread      - Configure and read M34/M35 channels (blockwise) 
+
+Program m34_read
+----------------
+
+Usage:
+   m34_read [<opts>] <device> [<opts>]
+
+Function:
+   Configure and read M34/M35 channel
+
+Options:
+   device       device name                 [none]   
+   -r=<res>     resolution                  [none]   
+                 12 = 12-bit (for M34)   
+                 14 = 14-bit (for M35)   
+   -c=<chan>    channel number (0..7/15)    [0]   
+   -g=<gain>    gain factor                 [x1]   
+                 0 = x1   
+                 1 = x2   
+                 2 = x4   
+                 3 = x8   
+                 4 = x16 (on-board jumper must be set !)   
+   -m=<mode>    measuring mode              [unipolar]   
+                 0=unipolar   
+                 1=bipolar   
+   -d=<mode>    display mode                [raw hex]   
+                 0 = raw hex value    
+                 1 = hex and volt     
+                 2 = hex and ampere (only for gain factor x8)   
+   -l           loop mode                   [no]   
+   
+Description:
+   Universal tool for read M34/M35 channels   
+   
+Program m34_blkread
+-------------------
+
+Usage:
+   m34_blkread [<opts>] <device> [<opts>]
+
+Function:
+   Configure and read M34/M35 channels (blockwise) 
+
+Options:
+   device       device name                          [none]   
+   -r=<res>     resolution                           [none]   
+                 12 = 12-bit (for M34)   
+                 14 = 14-bit (for M35)   
+   -a=<ch>      first channel to read (0..7/15)      [0]   
+   -z=<ch>      last channel to read (0..7/15)       [7/15]   
+   -b=<mode>    block i/o mode                       [USRCTRL]   
+                 0 = M_BUF_USRCTRL   
+                 1 = M_BUF_CURRBUF   
+                 2 = M_BUF_RINGBUF   
+                 3 = M_BUF_RINGBUF_OVERWR   
+   -s=<size>    block size in bytes                  [128]   
+   -o=<msec>    block read timeout [msec] (0=none)   [0]   
+   -g=<gain>    gain factor for all channels         [x1]   
+                 0 = x1   
+                 1 = x2   
+                 2 = x4   
+                 3 = x8   
+                 4 = x16 (on-board jumper must be set !)   
+   -m=<mode>    measuring mode                       [unipolar]   
+                 0=unipolar   
+                 1=bipolar   
+   -d=<mode>    display mode                         [raw hex]   
+                 0 = raw hex value    
+                 1 = volt     
+                 2 = ampere (only for gain factor x8)   
+   -h           install buffer highwater signal      [no]   
+   -l           loop mode                            [no]   
+   
+Description:
+   Universal tool for read M34/M35 channels (blockwise)    
+   

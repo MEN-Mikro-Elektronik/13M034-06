@@ -1,0 +1,5 @@
+#!/bin/sh
+mdiswiz -pkg2dsc 13m03406.xml A12b A201 M34 m34
+mdiswiz -pkg2dsc 13m03406.xml A12b  A12_OBMMODS M34 m34_sw
+mdiswiz -pkg2dsc 13m03406.xml A12b A201 M35 m35
+mdiswiz -pkg2dsc 13m03406.xml A12b  A12_OBMMODS M35 m35_sw
