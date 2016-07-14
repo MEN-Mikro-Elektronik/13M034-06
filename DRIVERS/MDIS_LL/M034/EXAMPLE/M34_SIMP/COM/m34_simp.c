@@ -57,7 +57,7 @@ static char *RCSid="$Id: m34_simp.c,v 1.9 2009/10/19 16:22:03 KSchneider Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include <MEN/men_typs.h>
 #include <MEN/usr_oss.h>
 #include <MEN/mdis_api.h>

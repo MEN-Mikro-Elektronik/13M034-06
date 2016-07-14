@@ -34,7 +34,7 @@ static const char RCSid[]="$Header: /dd2/CVSR/COM/DRIVERS/MDIS_LL/M034/TOOLS/M34
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include <MEN/men_typs.h>
 #include <MEN/usr_oss.h>
 #include <MEN/usr_utl.h>

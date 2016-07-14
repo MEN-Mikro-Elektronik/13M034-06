@@ -3,8 +3,8 @@
 <package xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="packagedesc.xsd">
 	<name>13m03406</name>
 	<description>MDIS5 driver package for MEN M34 and M35 M-Module</description>
-	<date>2009-10-20</date>
-	<revision>2.2</revision>
+	<date>2016-07-14</date>
+	<revision>2.3</revision>
 	<docroot>DRIVERS/MDIS_LL/M034/DOC/main.html</docroot>
 	<modellist>
 		<model>
