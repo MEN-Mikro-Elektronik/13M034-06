@@ -1,12 +1,79 @@
 Program Description
 ===================
-Tue Dec 15 09:40:59 MEZ 1998
+Mon Nov  9 17:08:55 CET 2015
  
-Overwiew of all Programs
+Overview of all Programs
 ------------------------
 
+m34_blkread      - Configure and read M34/M35 channels (blockwise)       
 m34_read         - Configure and read M34/M35 channel
-m34_blkread      - Configure and read M34/M35 channels (blockwise) 
+
+Program m34_blkread
+-------------------
+
+Usage:
+   m34_blkread [<opts>] <device> [<opts>]                   
+
+Function:
+   Configure and read M34/M35 channels (blockwise)       
+
+Options:
+   device       device name                          [none]       
+   -r=<res>     resolution                           [none]       
+                  12 = 12-bit (for M34)                           
+                  14 = 14-bit (for M35)                           
+   _____________channel selection______________________________   
+   -x           channel selection from descriptor    [no]         
+                  (ignores -a=<ch> and  -z=<ch>)                  
+   -a=<ch>      first channel to read (0..7/15)      [0]          
+   -z=<ch>      last channel to read (0..7/15)       [7/15]       
+   _____________measurement settings___________________________   
+   -g=<gain>    gain factor for all channels         [x1]         
+                  0 = x1                                          
+                  1 = x2                                          
+                  2 = x4                                          
+                  3 = x8                                          
+                  4 = x16 (on-board jumper must be set !)         
+   -m=<mode>    measuring mode                       [unipolar]   
+                  0=unipolar                                      
+                  1=bipolar                                       
+   -d=<mode>    display mode                         [raw hex]    
+                  0 = raw hex value                               
+                  1 = volt                                        
+                  2 = ampere (only for gain factor x8)            
+   _____________block/buffer/irq specific settings_____________   
+   -b=<mode>    block i/o mode                       [USRCTRL]    
+                  0 = M_BUF_USRCTRL                               
+                  1 = M_BUF_CURRBUF (uses irq, not for -i=2)      
+                  2 = M_BUF_RINGBUF (uses irq)                    
+                  3 = M_BUF_RINGBUF_OVERWR (uses irq)             
+   -i=<mode>    irq mode                             [0]          
+                  0 = Legacy mode: read all enabled ch per irq    
+                      (wastes cpu time in isr)                    
+                  1 = One ch per irq mode: read one enabled ch    
+                      per irq (improved isr processing)           
+                  2 = One ch per irq mode with irq en/disable:    
+                      same as mode 1 but automatically            
+                      enables/disables the module interrupt       
+                  3 = Fix mode: read always all ch per irq        
+                      (ignores ch selection and buffer config)    
+   -s=<size>    block size to read in bytes          [128]        
+                  -i=1/2: must be multiple of ch to read x2       
+                  -i=3  : automatically set (-s= ignored)         
+   -o=<msec>    block read timeout [msec] (0=none)   [0]          
+   -h           install buffer highwater signal      [no]         
+   _____________miscellaneous settings_________________________   
+   -l           loop mode                            [no]         
+                                                                  
+
+Description:
+   simple example for using M34 Low Level Driver direct   
+   
+   Simple example program for the M34 driver.   
+   Configure and read all channels from M34 or M35 module.   
+   
+   Universal tool to read M34/M35 channels (blockwise)    
+   
 
 Program m34_read
 ----------------
@@ -39,47 +106,5 @@ Options:
    -l           loop mode                   [no]   
    
 Description:
-   Universal tool for read M34/M35 channels   
-   
-Program m34_blkread
--------------------
-
-Usage:
-   m34_blkread [<opts>] <device> [<opts>]
-
-Function:
-   Configure and read M34/M35 channels (blockwise) 
-
-Options:
-   device       device name                          [none]   
-   -r=<res>     resolution                           [none]   
-                 12 = 12-bit (for M34)   
-                 14 = 14-bit (for M35)   
-   -a=<ch>      first channel to read (0..7/15)      [0]   
-   -z=<ch>      last channel to read (0..7/15)       [7/15]   
-   -b=<mode>    block i/o mode                       [USRCTRL]   
-                 0 = M_BUF_USRCTRL   
-                 1 = M_BUF_CURRBUF   
-                 2 = M_BUF_RINGBUF   
-                 3 = M_BUF_RINGBUF_OVERWR   
-   -s=<size>    block size in bytes                  [128]   
-   -o=<msec>    block read timeout [msec] (0=none)   [0]   
-   -g=<gain>    gain factor for all channels         [x1]   
-                 0 = x1   
-                 1 = x2   
-                 2 = x4   
-                 3 = x8   
-                 4 = x16 (on-board jumper must be set !)   
-   -m=<mode>    measuring mode                       [unipolar]   
-                 0=unipolar   
-                 1=bipolar   
-   -d=<mode>    display mode                         [raw hex]   
-                 0 = raw hex value    
-                 1 = volt     
-                 2 = ampere (only for gain factor x8)   
-   -h           install buffer highwater signal      [no]   
-   -l           loop mode                            [no]   
-   
-Description:
-   Universal tool for read M34/M35 channels (blockwise)    
+   Universal tool to read M34/M35 channels   
    

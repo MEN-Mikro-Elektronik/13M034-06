@@ -2,9 +2,9 @@
  *
  *         Name: m34_driver.h
  *
- *      $Author: KSchneider $
- *        $Date: 2009/10/19 18:10:05 $
- *    $Revision: 1.5 $
+ *      $Author: DPfeuffer $
+ *        $Date: 2018/06/11 15:53:19 $
+ *    $Revision: 1.6 $
  *
  *  Description: Header file for M34 driver modules
  *               - M34 specific status codes
@@ -16,6 +16,10 @@
  *-------------------------------[ History ]---------------------------------
  *
  * $Log: m34_drv.h,v $
+ * Revision 1.6  2018/06/11 15:53:19  DPfeuffer
+ * R: introduction of three additional isr modes
+ * M: add support for isr modes
+ *
  * Revision 1.5  2009/10/19 18:10:05  KSchneider
  * R: driver ported to MDIS5, new MDIS_API and men_typs
  * M: for backward compatibility to MDIS4 optionally define new types
@@ -62,7 +66,11 @@
 #define M34_EXT_PIN               M_DEV_OF+0x04   /* G  : get status of EXT pin */
 #define M34_DUMMY_READS           M_DEV_OF+0x05   /* G  : nbr of see M34_HwBlockRead */
 #define M34_SINGLE_ENDED          M_DEV_OF+0x06   /* G  : sing. ended/differential  */
+#define M34_IRQ_MODE              M_DEV_OF+0x07   /* G,S: irq mode */
 
+#ifdef WINNT
+#define M34_ISR_TIME              M_DEV_OF+0x08   /* G  : accumulated isr time */
+#endif
 
 /*------ set/getstat and descriptor values --------*/
 #define M34_IS_DIFFERENTIAL		0
@@ -72,6 +80,14 @@
 #define M34_GAIN_2				0x01
 #define M34_GAIN_4				0x02
 #define M34_GAIN_8				0x03
+
+										/* buffer|M_BUF_CURRBUF|irq/ch|auto irq|ext-trig */
+										/*       |             |      | en/dis |         */
+		                                /* ------+-------------+------+--------+-------- */
+#define M34_IMODE_LEGACY		0		/*  yes	 |      yes    |  no  |    no  |   yes   */
+#define M34_IMODE_CHIRQ			1		/*	yes  |      yes    | yes  |	   no  |   yes   */
+#define M34_IMODE_CHIRQ_AUTO	2		/*	yes  |       no    | yes  |	  yes  |   yes   */
+#define M34_IMODE_FIX			3		/*	 no  |       no    | yes  |	  yes  |    no   */
 
 #define M34_UNIPOLAR			0
 #define M34_BIPOLAR				1

@@ -1,39 +1,42 @@
 <html>
 <head>
-<title>Functional Description</title>
+<title>M034 driver</title>
 <style type=text/css>
-    h1, h2 { margin-top:20px; }
-	body { background:white; }
-	h1 { color:black; }
-	h2 { color:green; }
-	h3 { color:gray; }
+    Body { background-color: #ffffff; }
+    A:link { color: #c50038; }
+    A:hover { color: #28669b; }
+    P, H1, H2, H3, H3, H5, LI {
+        color: #434343;
+        font-family: Arial, Helvetica, Univers;
+    }
+    P, LI { font-size: 9.000000pt; }
 </style>
 </head>
 <body>
-<h1>Functional Description</h1>
-Fri Dec 11 13:15:32 MEZ 1998
- 
+<h1>M034 driver</h1>
+<p>Mon Nov  9 17:08:55 CET 2015</p>
 <h2>Overview of all Functions</h2>
-<pre>
-<a href="#intro0"><h3>Low level driver for M34 modules</h3></a>
-<a href="#M34_Ident">M34_Ident</a>                     Gets the pointer to ident string. 
-<a href="#M34_MemCleanup">M34_MemCleanup</a>                Deallocates low-level driver structure and 
-<a href="#M34_GetEntry">M34_GetEntry</a>                  Gets the entry points of the low level driver functions. 
-<a href="#M34_Init">M34_Init</a>                      Decodes descriptor, allocates and initializes the low-level 
-<a href="#M34_Exit">M34_Exit</a>                      Deinits HW, disables interrupts, frees allocated memory. 
-<a href="#M34_Read">M34_Read</a>                      Reads input state from current channel. 
-<a href="#M34_Write">M34_Write</a>                     Write value to device 
-<a href="#M34_SetStat">M34_SetStat</a>                   Set the device state. 
-<a href="#M34_GetStat">M34_GetStat</a>                   Changes the device state. 
-<a href="#M34_BlockRead">M34_BlockRead</a>                 Reads all configured channels to buffer. 
-<a href="#M34_BlockWrite">M34_BlockWrite</a>                Write data block to device 
-<a href="#M34_Irq">M34_Irq</a>                       Reads all configured ( M34_CH_RDBLK_IRQ ) to buffer or 
-<a href="#M34_Info">M34_Info</a>                      Gets low level driver info. 
-</pre>
- 
-<a name="intro0"><h1>Low level driver for M34 modules </h1></a>
-<pre>
+<a name="chapt0"><a href="#intro0"><h3>Low level driver for M34/M35 modules</h3></a>
+<TABLE border=1>
+<TR><TD><P><B>Function</B></P></TD><TD><P><B>Description</B></P></TD></TR>
 
+<TR><TD><P><a href="#M34_Ident">M34_Ident</a></P></TD><TD><P>Gets the pointer to ident string. </P></TD></TR>
+<TR><TD><P><a href="#M34_MemCleanup">M34_MemCleanup</a></P></TD><TD><P>Deallocates low-level driver structure and </P></TD></TR>
+<TR><TD><P><a href="#M34_GetEntry">M34_GetEntry</a></P></TD><TD><P>Gets the entry points of the low level driver functions. </P></TD></TR>
+<TR><TD><P><a href="#M34_Init">M34_Init</a></P></TD><TD><P>Decodes descriptor, allocates and initializes the low-level </P></TD></TR>
+<TR><TD><P><a href="#M34_Exit">M34_Exit</a></P></TD><TD><P>Deinits HW, disables interrupts, frees allocated memory. </P></TD></TR>
+<TR><TD><P><a href="#M34_Read">M34_Read</a></P></TD><TD><P>Reads input state from current channel. </P></TD></TR>
+<TR><TD><P><a href="#M34_Write">M34_Write</a></P></TD><TD><P>Write value to device </P></TD></TR>
+<TR><TD><P><a href="#M34_SetStat">M34_SetStat</a></P></TD><TD><P>Set the device state. </P></TD></TR>
+<TR><TD><P><a href="#M34_GetStat">M34_GetStat</a></P></TD><TD><P>Changes the device state. </P></TD></TR>
+<TR><TD><P><a href="#M34_BlockRead">M34_BlockRead</a></P></TD><TD><P>Reads all configured channels to buffer. </P></TD></TR>
+<TR><TD><P><a href="#M34_BlockWrite">M34_BlockWrite</a></P></TD><TD><P>Write data block to device </P></TD></TR>
+<TR><TD><P><a href="#M34_Irq">M34_Irq</a></P></TD><TD><P>Reads all configured ( M34_CH_RDBLK_IRQ ) to buffer or </P></TD></TR>
+<TR><TD><P><a href="#M34_Info">M34_Info</a></P></TD><TD><P>Gets low level driver info. </P></TD></TR>
+</TABLE>
+ 
+<a name="intro0"><h1>Low level driver for M34/M35 modules </h1></a>
+<pre>
 Dummy conversions are required if channel and/or
 amplification were previously changed (m34_read,
 m34_block_read, m34_irq_c ) by setting
@@ -47,560 +50,572 @@ in M_BUF_USRCTRL buffer mode.
 
 Additional block read delay time can be defined, to add
 dummy conversions at block read and interrupt triggered
-read (define in descriptor)
+read (define in descriptor).
 
-Required: ---
+Interrupt Modes
+---------------
+The driver supports four interrupt modes.
+The default mode (lagacy irq mode) was the first implemented
+mode. It is still available to be compatible to existing
+application software. However, this mode wastes some CPU time in
+the ISR and should not be used for new applications.
+
+The fix irq mode is the most efficient mode and requires no external
+trigger signal. However, this mode is not so flexible (reads always
+all available channels).
+
+For further information of the interrupt modes, see M34_Init, M34_SetStat
+and M34_BlockRead.
+
+Required: OSS, DESC, DBG, ID, MBUF libraries
 Switches: _ONE_NAMESPACE_PER_DRIVER_
 
 </pre>
+<a name="M34_Ident"><h2>Function M34_Ident()</h2></a>
 
+<h3>Syntax</h3>
+<pre>static char* M34_Ident( void )
+</pre><h3>Description</h3>
+<pre>Gets the pointer to ident string.
+
+</pre><h3>Input</h3>
+<pre>-
+
+</pre><h3>Output</h3>
+<pre>return  pointer to ident string
+
+</pre>
+<a name="M34_MemCleanup"><h2>Function M34_MemCleanup()</h2></a>
+
+<h3>Syntax</h3>
+<pre>static int32 M34_MemCleanup( M34_HANDLE *m34Hdl )
+</pre><h3>Description</h3>
+<pre>Deallocates low-level driver structure and
+installed signals and buffers.
+
+</pre><h3>Input</h3>
+<pre>m34Hdl   m34 low level driver handle
+
+</pre><h3>Output</h3>
+<pre>return   0 | error code
+
+</pre>
 <a name="M34_GetEntry"><h2>Function M34_GetEntry()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    #ifdef _ONE_NAMESPACE_PER_DRIVER_
-        void LL_GetEntry( LL_ENTRY* drvP )
-    #else
-        void M34_GetEntry( LL_ENTRY* drvP )
-    #endif /* _ONE_NAMESPACE_PER_DRIVER_ */
-</pre>
-<h3>Description</h3>
-<pre>
-    Gets the entry points of the low level driver functions.
+<pre>#ifdef _ONE_NAMESPACE_PER_DRIVER_
+    void LL_GetEntry( LL_ENTRY* drvP )
+#else
+    void __M34_GetEntry( LL_ENTRY* drvP )
+#endif /* _ONE_NAMESPACE_PER_DRIVER_ */
+</pre><h3>Description</h3>
+<pre>Gets the entry points of the low level driver functions.
+
+</pre><h3>Input</h3>
+<pre>---
+
+</pre><h3>Output</h3>
+<pre>drvP  pointer to the initialized structure
 
 </pre>
-<h3>Input</h3>
-<pre>
-    ---
-
-</pre>
-<h3>Output</h3>
-<pre>
-    drvP  pointer to the initialized structure
-
-</pre>
-
 <a name="M34_Init"><h2>Function M34_Init()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_Init
-    (
-        DESC_SPEC       *descSpec,
-        OSS_HANDLE      *osHdl,
-        MACCESS         *ma,
-        OSS_SEM_HANDLE  *devSem,
-        OSS_IRQ_HANDLE  *irqHdl,
-        LL_HANDLE       **llHdlP
-    )
+<pre>static int32 M34_Init
+(
+    DESC_SPEC       *descSpec,
+    OSS_HANDLE      *osHdl,
+    MACCESS         *ma,
+    OSS_SEM_HANDLE  *devSem,
+    OSS_IRQ_HANDLE  *irqHdl,
+    LL_HANDLE       **llHdlP
+)
+</pre><h3>Description</h3>
+<pre>Decodes descriptor, allocates and initializes the low-level
+driver structure and initializes the hardware.
+Reads and checks the ID if enabled in descriptor.
+Clears and disables the module interrupts.
+The driver support 16 analog input channels in single-ended
+or 8 analog input channels in differential mode.
+The channel gain can be set to 1,2,4 or 8. Gain value 16 is
+hardwired and the configuration values and SetStats have no
+effect.
+Only selected channels will be read at M34_BlockRead and
+M34_Irq.
+The driver supports one buffer with the width of two bytes
+for all channels.
+
+Common Desc. Keys   Default          Range/Unit
+-----------------------------------------------------------
+DEBUG_LEVEL_DESC    OSS_DBG_DEFAULT  see dbg.h
+DEBUG_LEVEL_MBUF    OSS_DBG_DEFAULT  see dbg.h
+DEBUG_LEVEL         OSS_DBG_DEFAULT  see dbg.h
+ID_CHECK            1                0 or 1
+
+Special Desc. Keys  Default        Range/Unit
+-----------------------------------------------------------
+M34_SINGLE_ENDED    1              0,1
+                                   0-differential -&#62;  8 ch.
+                                   1-single ended -&#62; 16 ch.
+                                   this value should meet
+                                   the type of the used
+                                   input module e.g. AD01
+
+M34_DUMMY_READS     0              0..10 number of additional
+                                         dummy reads
+
+M34_PREVENT_BUSERR  0              0,1
+                                   0-bus error if no voltage
+                                     supply
+                                   1-no bus error (BI pin
+                                     must be connected to GND) 
+
+M34_IRQ_MODE        0    0..3 (M34_IMODE_XXX defines)
+                         0-legacy mode
+                           read all enabled ch per irq
+                           (wastes cpu time in isr)
+                         1-one ch per irq mode
+                           read one enabled ch per irq
+                           (improved isr processing)
+                         2-one ch per irq mode with irq enable/disable
+                           same as mode 1 but automatically 
+                           enables/disables the module interrupt   
+                         3-fix mode
+                           read always all ch per irq (ignores
+                           M34_CH_RDBLK_IRQ) without buffer
+                           (ignores RD_BUF)
+
+RD_BUF/SIZE         320            buffer size in byte
+                                   (multiple of 2)
+RD_BUF/MODE         MBUF_USR_CTRL  buffer mode
+RD_BUF/TIMEOUT      1000           timeout in milli sec.
+RD_BUF/HIGHWATER    320            high water mark in bytes
+
+CHANNEL_%d/
+ M34_GAIN           0              0..3 amplification 1,2,4,8
+
+CHANNEL_%d/
+ M34_BIPOLAR        0              0,1 0-unipolar
+                                       1-bipolar
+
+CHANNEL_%d/
+ M34_CH_RDBLK_IRQ   0              0,1
+                                   0-don't read channel at
+                                     M34_BlockRead/Irq
+                                   1-read chhannel at
+                                     M34_BlockRead/Irq
+
+</pre><h3>Input</h3>
+<pre>descSpec   pointer to descriptor specifier
+osHdl      pointer to the os specific structure
+ma         pointer to access handle
+devSem     device semaphore for unblocking in wait
+irqHdl     irq handle for mask and unmask interrupts
+llHdlP     pointer to the variable where low level driver
+           handle will be stored
+
+</pre><h3>Output</h3>
+<pre>*llHdlP    low level driver handle
+return     0 | error code
+
 </pre>
-<h3>Description</h3>
-<pre>
-    Decodes descriptor, allocates and initializes the low-level
-    driver structure and initializes the hardware.
-    Reads and checks the ID if enabled in descriptor.
-    Clears and disables the module interrupts.
-    The driver support 16 analog input channels in single-ended
-    or 8 analog input channels in differential mode.
-    The channel gain can be set to 1,2,4 or 8. Gain value 16 is
-    hardwired and the configuration values and SetStats have no
-    effect.
-    Only selected channels will be read at M34_BlockRead and
-    M34_Irq.
-    The driver supports one buffer with the width of two bytes
-    for all channels.
-
-    Common Desc. Keys   Default          Range/Unit
-    -----------------------------------------------------------
-    DEBUG_LEVEL_DESC    OSS_DBG_DEFAULT  see dbg.h
-    DEBUG_LEVEL_MBUF    OSS_DBG_DEFAULT  see dbg.h
-    DEBUG_LEVEL         OSS_DBG_DEFAULT  see dbg.h
-    ID_CHECK            1                0 or 1
-
-    Special Desc. Keys  Default        Range/Unit
-    -----------------------------------------------------------
-    M34_SINGLE_ENDED    1              0,1
-                                       0-differential ->  8 ch.
-                                       1-single ended -> 16 ch.
-                                       this value should meet
-                                       the type of the used
-                                       input module e.g. AD01
-
-    M34_DUMMY_READS     0              0..10 number of additional
-                                             dummy reads
-
-    M34_PREVENT_BUSERR  0              0,1
-                                       0-bus error if no voltage
-                                         supply
-                                       1-no bus error (BI pin
-                                         must be connected to GND) 
-
-    RD_BUF/SIZE         320            buffer size in byte
-                                       (multiple of 2)
-    RD_BUF/MODE         MBUF_USR_CTRL  buffer mode
-    RD_BUF/TIMEOUT      1000           timeout in milli sec.
-    RD_BUF/HIGHWATER    320            high water mark in bytes
-
-    CHANNEL_%d/
-     M34_GAIN           0              0..3 amplification 1,2,4,8
-
-    CHANNEL_%d/
-     M34_BIPOLAR        0              0,1 0-unipolar
-                                           1-bipolar
-
-    CHANNEL_%d/
-     M34_CH_RDBLK_IRQ   0              0,1
-                                       0-don't read channel at
-                                         M34_BlockRead/Irq
-                                       1-read chhannel at
-                                         M34_BlockRead/Irq
-
-</pre>
-<h3>Input</h3>
-<pre>
-    descSpec   pointer to descriptor specifier
-    osHdl      pointer to the os specific structure
-    ma         pointer to access handle
-    devSem     device semaphore for unblocking in wait
-    irqHdl     irq handle for mask and unmask interrupts
-    llHdlP     pointer to the variable where low level driver
-               handle will be stored
-
-</pre>
-<h3>Output</h3>
-<pre>
-    *llHdlP    low level driver handle
-    return     0 | error code
-
-</pre>
-
 <a name="M34_Exit"><h2>Function M34_Exit()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_Exit
-    (
-        LL_HANDLE **llHdlP
-    )
-</pre>
-<h3>Description</h3>
-<pre>
-    Deinits HW, disables interrupts, frees allocated memory.
+<pre>static int32 M34_Exit
+(
+    LL_HANDLE **llHdlP
+)
+</pre><h3>Description</h3>
+<pre>Deinits HW, disables interrupts, frees allocated memory.
+
+</pre><h3>Input</h3>
+<pre>llHdlP     pointer to the variable where low level driver
+           handle will be stored
+
+</pre><h3>Output</h3>
+<pre>*llHdlP    NULL
+return     0 | error code
 
 </pre>
-<h3>Input</h3>
-<pre>
-    llHdlP     pointer to the variable where low level driver
-               handle will be stored
-
-</pre>
-<h3>Output</h3>
-<pre>
-    *llHdlP    NULL
-    return     0 | error code
-
-</pre>
-
 <a name="M34_Read"><h2>Function M34_Read()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_Read
-    (
-        LL_HANDLE   *llHdl,
-        int32       ch,
-        int32       *valueP
-    )
-</pre>
-<h3>Description</h3>
-<pre>
-    Reads input state from current channel.
-    Set the current channel gain and mode, then  starts a dummy
-    conversion.
-    Starts a second conversion and reads the sampled value.
+<pre>static int32 M34_Read
+(
+    LL_HANDLE   *llHdl,
+    int32       ch,
+    int32       *valueP
+)
+</pre><h3>Description</h3>
+<pre>Reads input state from current channel.
+Set the current channel gain and mode, then  starts a dummy
+conversion.
+Starts a second conversion and reads the sampled value.
 
-    byte structure of value
+byte structure of value
 
-    bit           15   14..5    4    3..2   1     0
-               +-----+- - - -+-----+- - -+-----+-----+
-    meaning    | msb |       | lsb |  no |  E  |  S  |
-               +-----+- - - -+-----+- - -+-----+-----+
+bit           15   14..5    4    3..2   1     0
+           +-----+- - - -+-----+- - -+-----+-----+
+meaning    | msb |       | lsb |  no |  E  |  S  |
+           +-----+- - - -+-----+- - -+-----+-----+
 
-    The converted value is stored in bit 15..4.
-    Bit 1 shows the status of the external pin.
-                             ( 0 connected to ground )
-    Bit 0 is zero if the measuring value is valid.
+The converted value is stored in bit 15..4.
+Bit 1 shows the status of the external pin.
+                         ( 0 connected to ground )
+Bit 0 is zero if the measuring value is valid.
 
-</pre>
-<h3>Input</h3>
-<pre>
-    llHdl   pointer to low-level driver data structure
-    ch      current channel 0..15 (7-differential)
-    valueP  pointer to variable where read value stored
+</pre><h3>Input</h3>
+<pre>llHdl   pointer to low-level driver data structure
+ch      current channel 0..15 (7-differential)
+valueP  pointer to variable where read value stored
 
-</pre>
-<h3>Output</h3>
-<pre>
-    *valueP  read value 0=low, 1=high
-    return   0 | error code
-                 ERR_LL_READ - if irq enabled
+</pre><h3>Output</h3>
+<pre>*valueP  read value 0=low, 1=high
+return   0 | error code
+             ERR_LL_READ - if irq enabled
 
 </pre>
-
 <a name="M34_Write"><h2>Function M34_Write()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_Write
-    (
-        LL_HANDLE *llHdl,
-        int32  ch,
-        int32  value
-    )
-</pre>
-<h3>Description</h3>
-<pre>
-    Write value to device
+<pre>static int32 M34_Write
+(
+    LL_HANDLE *llHdl,
+    int32  ch,
+    int32  value
+)
+</pre><h3>Description</h3>
+<pre>Write value to device
 
-    The function is not supported and returns always an
-    ERR_LL_ILL_FUNC error.
+The function is not supported and returns always an
+ERR_LL_ILL_FUNC error.
 
-</pre>
-<h3>Input</h3>
-<pre>
-    llHdl  pointer to low-level driver data structure
-    ch     current channel
-    value  value to write
+</pre><h3>Input</h3>
+<pre>llHdl  pointer to low-level driver data structure
+ch     current channel
+value  value to write
+
+</pre><h3>Output</h3>
+<pre>return ERR_LL_ILL_FUNC
 
 </pre>
-<h3>Output</h3>
-<pre>
-    return ERR_LL_ILL_FUNC
-
-</pre>
-
 <a name="M34_SetStat"><h2>Function M34_SetStat()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_SetStat
-    (
-        LL_HANDLE *llHdl,
-        int32  code,
-        int32  ch,
-        INT32_OR_64  value32_or_64
-    )
-</pre>
-<h3>Description</h3>
-<pre>
-    Set the device state.
+<pre>static int32 M34_SetStat
+(
+    LL_HANDLE *llHdl,
+    int32  code,
+    int32  ch,
+    INT32_OR_64 value32_or_64 
+)
+</pre><h3>Description</h3>
+<pre>Set the device state.
 
-    COMMON CODES      CH       VALUES      MEANING
-    -------------------------------------------------------------------------
-    M_LL_DEBUG_LEVEL  all      see dbg.h   debug level of the low level driver
+COMMON CODES      CH       VALUES      MEANING
+-------------------------------------------------------------------------
+M_LL_DEBUG_LEVEL  all      see dbg.h   debug level of the low level driver
 
-    M_LL_CH_DIR       all      M_CH_IN     direction of current channel
+M_LL_CH_DIR       all      M_CH_IN     direction of current channel
 
-    M_LL_IRQ_COUNT    all      0..max      interrupt counter
+M_LL_IRQ_COUNT    all      0..max      interrupt counter
 
-    M_MK_IRQ_ENABLE   all      0,1         0 - disables module interrupt
-                                           1 - enables module interrupt
+M_MK_IRQ_ENABLE   all      0,1         irq mode M34_IMODE_LEGACY/_CHIRQ:
+                                        0 - disables module interrupt
+                                        1 - enables module interrupt
+                                       irq mode M34_IMODE_CHIRQ_AUTO/_FIX:
+                                        no operation
 
-    SPECIAL CODES     CH       VALUES      MEANING
-    -------------------------------------------------------------------------
-    M34_CH_GAIN       current  0..3        set gain of current channel
-                                           see M34_drv.h
-                                           M34_GAIN_1, M34_GAIN_2
-                                           M34_GAIN_4, M34_GAIN_8
+SPECIAL CODES     CH       VALUES      MEANING
+-------------------------------------------------------------------------
+M34_CH_GAIN       current  0..3        set gain of current channel
+                                       see M34_drv.h
+                                       M34_GAIN_1, M34_GAIN_2
+                                       M34_GAIN_4, M34_GAIN_8
 
-    M34_CH_BIPOLAR    current  0,1         set mode of current channel
-                                           M34_BIPOLAR
-                                           M34_UNIPOLAR
+M34_CH_BIPOLAR    current  0,1         set mode of current channel
+                                       0 (M34_UNIPOLAR) - unipolar mode
+                                       1 (M34_BIPOLAR)  - bipolar mode
 
-    M34_CH_RDBLK_IRQ  current  0,1         0- don't read channel in BlkRd/Irq
-                                           1-read channel in BlkRd/Irq
+M34_CH_RDBLK_IRQ  current  0,1         0 - don't read channel in BlkRd/Irq
+                                       1 - read channel in BlkRd/Irq
 
-    M34_DUMMY_READS   all      0..10       additional dummy reads in BlkRd/Irq
+M34_DUMMY_READS   all      0..10       additional dummy reads in BlkRd/Irq
 
-</pre>
-<h3>Input</h3>
-<pre>
-    llHdl           pointer to low-level driver data structure
-    code            setstat code
-    ch              current channel 0..15 (7-differential)
-                    ( sometimes ignored )
-    value32_or_64   setstat value or pointer to blocksetstat data
+M34_IRQ_MODE      all      0..3       interrupt mode (see M34_Init)
 
-</pre>
-<h3>Output</h3>
-<pre>
-    return  0 | error code
+</pre><h3>Input</h3>
+<pre>llHdl             pointer to low-level driver data structure
+code              setstat code
+ch                current channel 0..15 (7-differential)
+                  ( sometimes ignored )
+value32_or_64     setstat value or pointer to blocksetstat data
+
+</pre><h3>Output</h3>
+<pre>return  0 | error code
 
 </pre>
-
 <a name="M34_GetStat"><h2>Function M34_GetStat()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_GetStat
-    (
-        LL_HANDLE *llHdl,
-        int32  code,
-        int32  ch,
-        INT32_OR_64  *value32_or_64P
-    )
-</pre>
-<h3>Description</h3>
-<pre>
-    Changes the device state.
+<pre>static int32 M34_GetStat
+(
+    LL_HANDLE *llHdl,
+    int32  code,
+    int32  ch,
+    INT32_OR_64 *value32_or_64P 
+)
+</pre><h3>Description</h3>
+<pre>Changes the device state.
 
-    COMMON CODES       CH       VALUES       MEANING
-    -------------------------------------------------------------------------
-    M_LL_CH_NUMBER      -       16/8         number of channels
+COMMON CODES       CH       VALUES       MEANING
+-------------------------------------------------------------------------
+M_LL_CH_NUMBER      -       16/8         number of channels
 
-    M_LL_CH_DIR         -       M_CH_IN      direction of curr ch
+M_LL_CH_DIR         -       M_CH_IN      direction of curr ch
 
-    M_LL_CH_LEN         -       16           channel length in bit
+M_LL_CH_LEN         -       16           channel length in bit
 
-    M_LL_CH_TYP         -       M_CH_ANALOG  channel type
+M_LL_CH_TYP         -       M_CH_ANALOG  channel type
 
-    M_LL_IRQ_COUNT      -       0..max       interrupt counter
+M_LL_IRQ_COUNT      -       0..max       interrupt counter
 
-    M_LL_ID_CHECK       -       0,1          1 - check EEPROM-Id from module
-                                                 in init
+M_LL_ID_CHECK       -       0,1          1 - check EEPROM-Id from module
+                                             in init
 
-    M_LL_DEBUG_LEVEL    -       see dbg.h    current debug level of the
-                                             low-level driver
+M_LL_DEBUG_LEVEL    -       see dbg.h    current debug level of the
+                                         low-level driver
 
-    M_LL_ID_SIZE        -       128          eeprom size [bytes]    
+M_LL_ID_SIZE        -       128          eeprom size [bytes]    
 
-    M_LL_BLK_ID_DATA    -                    read the M-Module ID from EEPROM
-     ((M_SETGETSTAT_BLOCK*)value32_or_64P)->size     number of bytes to read
-     ((M_SETGETSTAT_BLOCK*)value32_or_64P)->data     user buffer for the ID data
+M_LL_BLK_ID_DATA    -                    read the M-Module ID from EEPROM
+ ((M_SETGETSTAT_BLOCK*)valueP)-&#62;size     number of bytes to read
+ ((M_SETGETSTAT_BLOCK*)valueP)-&#62;data     user buffer for the ID data
 
-    M_MK_BLK_REV_ID     -       -            pointer to ident function table
+M_MK_BLK_REV_ID     -       -            pointer to ident function table
 
-    M_BUF_RD_MODE       -     M_BUF_USRCTRL  mode of read buffer
-                              M_BUF_CURRBUF
-                              M_BUF_RINGBUF
-                              M_BUF_RINGBUF_OVERWR
+M_BUF_RD_MODE       -     M_BUF_USRCTRL  mode of read buffer
+                          M_BUF_CURRBUF
+                          M_BUF_RINGBUF
+                          M_BUF_RINGBUF_OVERWR
 
-    SPECIAL CODES       CH       VALUES      MEANING
-    -------------------------------------------------------------------------
-    M34_CH_GAIN         current  0..3        set gain of current channel
-                                             see M34_drv.h
-                                             M34_GAIN_1, M34_GAIN_2
-                                             M34_GAIN_4, M34_GAIN_8
+SPECIAL CODES       CH       VALUES      MEANING
+-------------------------------------------------------------------------
+M34_CH_GAIN         current  0..3        set gain of current channel
+                                         see M34_drv.h
+                                         M34_GAIN_1, M34_GAIN_2
+                                         M34_GAIN_4, M34_GAIN_8
 
-    M34_CH_BIPOLAR      current  0,1         set mode of current channel
-                                             M34_BIPOLAR
-                                             M34_UNIPOLAR
+M34_CH_BIPOLAR      current  0,1         set mode of current channel
+                                         0 (M34_UNIPOLAR) - unipolar mode
+                                         1 (M34_BIPOLAR)  - bipolar mode
 
-    M34_CH_RDBLK_IRQ    current  0,1         0 - channel isn't read at
-                                                 M34_BlockRead/Irq
-                                             1 - channel is read at
-                                                 M34_BlockRead/Irq
-
-    M34_SINGLE_ENDED    -        0,1         0 - M34_IS_DIFFERENTIAL
-                                             1 - M34_IS_SINGLE_ENDED
-
-    M34_EXT_PIN         -        0,1         0 - extern pin is
-                                                 connected to ground
-                                             1 - extern pin is open or high
-
-    M34_DUMMY_READS     all      0..10       additional dummy reads in
+M34_CH_RDBLK_IRQ    current  0,1         0 - channel isn't read at
+                                             M34_BlockRead/Irq
+                                         1 - channel is read at
                                              M34_BlockRead/Irq
 
-</pre>
-<h3>Input</h3>
-<pre>
-    llHdl            pointer to low-level driver data structure
-    code             setstat code
-    ch               current channel 0..15 (7-differential)
-                     ( sometimes ignored )
-    value32_or_64P   pointer to variable where value stored or
-                     pointer to blocksetstat data
+M34_SINGLE_ENDED    -        0,1         0 - M34_IS_DIFFERENTIAL
+                                         1 - M34_IS_SINGLE_ENDED
+
+M34_EXT_PIN         -        0,1         0 - extern pin is
+                                             connected to ground
+                                         1 - extern pin is open or high
+
+M34_DUMMY_READS     all      0..10       additional dummy reads in
+                                         M34_BlockRead/Irq
+
+M34_IRQ_MODE        all      0..3        interrupt mode (see M34_Init)                                           
+
+</pre><h3>Input</h3>
+<pre>llHdl             pointer to low-level driver data structure
+code              setstat code
+ch                current channel 0..15 (7-differential)
+                  ( sometimes ignored )
+value32_or_64P    pointer to variable where value stored or
+                  pointer to blocksetstat data
+
+</pre><h3>Output</h3>
+<pre>*value32_or_64P   getstat value or pointer to blocksetstat data
+return            0 | error code
 
 </pre>
-<h3>Output</h3>
-<pre>
-    *value32_or_64P  getstat value or pointer to blocksetstat data
-    return           0 | error code
-
-</pre>
-
 <a name="M34_BlockRead"><h2>Function M34_BlockRead()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_BlockRead
-    (
-        LL_HANDLE *llHdl,
-        int32     ch,
-        void      *buf,
-        int32     size,
-        int32     *nbrRdBytesP
-    )
+<pre>static int32 M34_BlockRead
+(
+    LL_HANDLE *llHdl,
+    int32     ch,
+    void      *buf,
+    int32     size,
+    int32     *nbrRdBytesP
+)
+</pre><h3>Description</h3>
+<pre>Reads all configured channels to buffer.
+The read sequence is from lowest configured channel number to
+the highest.
+Supported buffer modes:
+  M_BUF_USRCTRL         reads from hw
+  M_BUF_RINGBUF         reads from buffer (uses irq)
+  M_BUF_RINGBUF_OVERWR    "     "     "       "
+  M_BUF_CURRBUF           "     "     "       "
+
+buffer structure
+
+word          0     ...      N
+           +-----+- - - -+-------+
+meaning    | CC1 |  ...  | CCN+1 |
+           +-----+- - - -+-------+
+
+             CC1   - first configured channel (see M34_CH_RDBLK_IRQ)
+             CCN+1 - last configured channel
+
+byte structure of value
+
+bit           15   14..5    4    3..2   1     0
+           +-----+- - - -+-----+- - -+-----+-----+
+meaning    | msb |       | lsb |  no |  E  |  S  |
+           +-----+- - - -+-----+- - -+-----+-----+
+
+  The converted value is stored in bit 15..4.
+  Bit 1 shows the status of the external pin.
+                         ( 0 connected to ground )
+  Bit 0 is zero if the measuring value is valid.
+
+The behaviour of this function depends on the interrupt mode:
+M34_IMODE_LEGACY (=0): legacy mode
+  - read all enabled ch per irq (wastes cpu time in isr)
+  - the module interrupt is enabled/disabled with M_MK_IRQ_ENABLE
+    setstat call
+  - supported for compatibility with existing applications
+  - not recommended for new applications
+
+M34_IMODE_CHIRQ (=1): one ch per irq mode
+  - read one enabled ch per irq (improved isr processing)
+  - the module interrupt is enabled/disabled with M_MK_IRQ_ENABLE
+    setstat call
+  - size must be multiple of enabled channels to read x2
+
+M34_IMODE_CHIRQ_AUTO (=2): one ch per irq mode with irq enable/disable
+  - read one enabled ch per irq (improved isr processing)
+  - the module interrupt is automatically enabled/disabled
+    (this reduces the irq amount)
+  - size must be multiple of enabled channels to read x2
+  - buffer mode M_BUF_CURRBUF is not supported
+
+M34_IMODE_FIX (=3): fix mode
+  - read always all available ch per irq (ignores M34_CH_RDBLK_IRQ config)
+  - the module interrupt is automatically enabled/disabled
+  - size must be the number of available channels x2
+  - without buffer usage (ignores RD_BUF/.. config)
+  - this is the only irq mode that operates without an external trigger
+     (the other irq modes with buffer mode CURRBUF or RINGBUF requires
+      an external trigger signal to generate irqs)
+  - this is the fastest and less cpu time consuming mode
+
+</pre><h3>Input</h3>
+<pre>llHdl  pointer to low-level driver data structure
+ch     current channel (always ignored)
+buf    buffer to store read values
+size   byte size to read (should be multiple of 2)
+
+</pre><h3>Output</h3>
+<pre>nbrRdBytesP  number of read bytes
+return       0 | error code
+             ERR_LL_READ - if irq enabled and M_BUF_USRCTRL
+
 </pre>
-<h3>Description</h3>
-<pre>
-    Reads all configured channels to buffer.
-    The read sequence is from lowest configured channel number to
-    the highest.
-    Supported modes:  M_BUF_USRCTRL         reads from hw
-                      M_BUF_RINGBUF         reads from buffer
-                      M_BUF_RINGBUF_OVERWR   "     "     "
-                      M_BUF_CURRBUF          "     "     "
-
-    buffer structure
-
-    word          0     ...      N
-               +-----+- - - -+-------+
-    meaning    | CC1 |  ...  | CCN+1 |
-               +-----+- - - -+-------+
-
-                 CC1   - first configured channel ( see M34_CH_RDBLK_IRQ )
-                 CCN+1 - last configured channel
-
-    byte structure of value
-
-    bit           15   14..5    4    3..2   1     0
-               +-----+- - - -+-----+- - -+-----+-----+
-    meaning    | msb |       | lsb |  no |  E  |  S  |
-               +-----+- - - -+-----+- - -+-----+-----+
-
-      The converted value is stored in bit 15..4.
-      Bit 1 shows the status of the external pin.
-                             ( 0 connected to ground )
-      Bit 0 is zero if the measuring value is valid.
-
-</pre>
-<h3>Input</h3>
-<pre>
-    llHdl  pointer to low-level driver data structure
-    ch     current channel (always ignored)
-    buf    buffer to store read values
-    size   should be multiple of width (2)
-
-</pre>
-<h3>Output</h3>
-<pre>
-    nbrRdBytesP  number of read bytes
-    return       0 | error code
-                 ERR_LL_READ - if irq enabled and M_BUF_USRCTRL
-
-</pre>
-
 <a name="M34_BlockWrite"><h2>Function M34_BlockWrite()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_BlockWrite
-    (
-        LL_HANDLE *llHdl,
-        int32     ch,
-        void      *buf,
-        int32     size,
-        int32     *nbrWrBytesP
-    )
-</pre>
-<h3>Description</h3>
-<pre>
-    Write data block to device
+<pre>static int32 M34_BlockWrite
+(
+    LL_HANDLE *llHdl,
+    int32     ch,
+    void      *buf,
+    int32     size,
+    int32     *nbrWrBytesP
+)
+</pre><h3>Description</h3>
+<pre>Write data block to device
 
-    The function is not supported and returns always an
-    ERR_LL_ILL_FUNC error.
+The function is not supported and returns always an
+ERR_LL_ILL_FUNC error.
 
-</pre>
-<h3>Input</h3>
-<pre>
-    llHdl        pointer to low-level driver data structure
-    ch           current channel  (always ignored)
-    buf          buffer to store read values
-    size         should be multiple of width
+</pre><h3>Input</h3>
+<pre>llHdl        pointer to low-level driver data structure
+ch           current channel  (always ignored)
+buf          buffer to store read values
+size         should be multiple of width
 
-</pre>
-<h3>Output</h3>
-<pre>
-    nbrWrBytesP  number of written bytes
-    return       ERR_LL_ILL_FUNC
+</pre><h3>Output</h3>
+<pre>nbrWrBytesP  number of written bytes
+return       ERR_LL_ILL_FUNC
 
 </pre>
-
 <a name="M34_Irq"><h2>Function M34_Irq()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_Irq
-    (
-        LL_HANDLE *llHdl
-    )
-</pre>
-<h3>Description</h3>
-<pre>
-    Reads all configured ( M34_CH_RDBLK_IRQ ) to buffer or
-    current channel (dummy) to reset irq cause.
-    Stores the values to buffer in M_BUF_CURRBUF, M_BUF_RINGBUF
-    and M_BUF_RINGBUF_OVERWR buffer mode.
+<pre>static int32 M34_Irq
+(
+    LL_HANDLE *llHdl
+)
+</pre><h3>Description</h3>
+<pre>Reads all configured ( M34_CH_RDBLK_IRQ ) to buffer or
+current channel (dummy) to reset irq cause.
+Stores the values to buffer in M_BUF_CURRBUF, M_BUF_RINGBUF
+and M_BUF_RINGBUF_OVERWR buffer mode.
+
+</pre><h3>Input</h3>
+<pre>llHdl  pointer to low-level driver data structure
+
+</pre><h3>Output</h3>
+<pre>return LL_IRQ_UNKNOWN
 
 </pre>
-<h3>Input</h3>
-<pre>
-    llHdl  pointer to low-level driver data structure
-
-</pre>
-<h3>Output</h3>
-<pre>
-    return LL_IRQ_UNKNOWN
-
-</pre>
-
 <a name="M34_Info"><h2>Function M34_Info()</h2></a>
 
 <h3>Syntax</h3>
-<pre>
-    int32 M34_Info
-    (
-       int32  infoType,
-       ...
-    )
-</pre>
-<h3>Description</h3>
-<pre>
-    Gets low level driver info.
+<pre>static int32 M34_Info
+(
+   int32  infoType,
+   ...
+)
+</pre><h3>Description</h3>
+<pre>Gets low level driver info.
 
-    NOTE: can be called before MXX_Init().
+NOTE: can be called before MXX_Init().
 
-    supported info type codes       value          meaning
-    ------------------------------------------------------------------------
-    LL_INFO_HW_CHARACTER
-    arg2  u_int32 *addrModeCharP    MDIS_MA08      M-Module characteristic
-    arg3  u_int32 *dataModeCharP    MDIS_MD16      M-Module characteristic
+supported info type codes       value          meaning
+------------------------------------------------------------------------
+LL_INFO_HW_CHARACTER
+arg2  u_int32 *addrModeCharP    MDIS_MA08      M-Module characteristic
+arg3  u_int32 *dataModeCharP    MDIS_MD16      M-Module characteristic
 
-    LL_INFO_ADDRSPACE_COUNT
-    arg2  u_int32 *nbrOfAddrSpaceP  1              number of used address
-                                        spaces
+LL_INFO_ADDRSPACE_COUNT
+arg2  u_int32 *nbrOfAddrSpaceP  1              number of used address
+                                    spaces
 
-    LL_INFO_ADDRSPACE
-    arg2  u_int32  addrSpaceIndex   0              current address space
-    arg3  u_int32 *addrModeP        MDIS_MA08      not used
-    arg4  u_int32 *dataModeP        MDIS_MD16      driver use D16 access
-    arg5  u_int32 *addrSizeP        0x100          needed size
+LL_INFO_ADDRSPACE
+arg2  u_int32  addrSpaceIndex   0              current address space
+arg3  u_int32 *addrModeP        MDIS_MA08      not used
+arg4  u_int32 *dataModeP        MDIS_MD16      driver use D16 access
+arg5  u_int32 *addrSizeP        0x100          needed size
 
-    LL_INFO_IRQ
-    arg2  u_int32 *useIrqP          1              module use interrupts
+LL_INFO_IRQ
+arg2  u_int32 *useIrqP          1              module use interrupts
 
-</pre>
-<h3>Input</h3>
-<pre>
-    infoType          desired information
-    ...               variable argument list
+LL_INFO_LOCKMODE
+arg2  u_int32 *lockModeP        LL_LOCK_CALL   process lock mode
 
-</pre>
-<h3>Output</h3>
-<pre>
-    return            0 | error code
+</pre><h3>Input</h3>
+<pre>infoType          desired information
+...               variable argument list
 
-</pre>
-</body>
+</pre><h3>Output</h3>
+<pre>return            0 | error code
+
+</pre></body>
 </html>

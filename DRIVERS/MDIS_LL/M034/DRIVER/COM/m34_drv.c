@@ -1,13 +1,13 @@
 /*********************  P r o g r a m  -  M o d u l e ***********************
  *
  *         Name: m34_drv.c
- *      Project: M34 module driver (MDIS V4.x)
+ *      Project: M34 module driver
  *
  *       Author: uf
- *        $Date: 2009/10/19 15:43:11 $
- *    $Revision: 1.14 $
+ *        $Date: 2018/06/11 15:48:45 $
+ *    $Revision: 1.15 $
  *
- *  Description: Low level driver for M34 modules
+ *  Description: Low level driver for M34/M35 modules
  *
  *               Dummy conversions are required if channel and/or
  *               amplification were previously changed (m34_read,
@@ -22,14 +22,33 @@
  *
  *               Additional block read delay time can be defined, to add
  *               dummy conversions at block read and interrupt triggered
- *               read (define in descriptor)
+ *               read (define in descriptor).
  *
- *     Required: ---
+ *               Interrupt Modes
+ *               ---------------
+ *               The driver supports four interrupt modes.
+ *               The default mode (lagacy irq mode) was the first implemented
+ *               mode. It is still available to be compatible to existing
+ *               application software. However, this mode wastes some CPU time in
+ *               the ISR and should not be used for new applications.
+ *
+ *               The fix irq mode is the most efficient mode and requires no external
+ *               trigger signal. However, this mode is not so flexible (reads always
+ *               all available channels).
+ *               
+ *               For further information of the interrupt modes, see M34_Init, M34_SetStat
+ *               and M34_BlockRead.
+ *
+ *     Required: OSS, DESC, DBG, ID, MBUF libraries
  *     Switches: _ONE_NAMESPACE_PER_DRIVER_
  *
  *-------------------------------[ History ]---------------------------------
  *
  * $Log: m34_drv.c,v $
+ * Revision 1.15  2018/06/11 15:48:45  DPfeuffer
+ * R: fast cpus wasting too much time in isr
+ * M: three additional isr modes implemented
+ *
  * Revision 1.14  2009/10/19 15:43:11  KSchneider
  * R: driver ported to MDIS5, new MDIS_API and men_typs
  * M: for backward compatibility to MDIS4 optionally define new types
@@ -86,10 +105,10 @@
  * Added by mcvs
  *
  *---------------------------------------------------------------------------
- * (c) Copyright 1995-98 by MEN mikro elektronik GmbH, Nuernberg, Germany
+ * (c) Copyright 1995-2015 by MEN mikro elektronik GmbH, Nuernberg, Germany
  ****************************************************************************/
 
-static char const IdentString[]="M34 - m34 low level driver: $Id: m34_drv.c,v 1.14 2009/10/19 15:43:11 KSchneider Exp $";
+static char const IdentString[]="M34 - m34 low level driver: $Id: m34_drv.c,v 1.15 2018/06/11 15:48:45 DPfeuffer Exp $";
 
 #include <MEN/men_typs.h>   /* system dependend definitions   */
 #include <MEN/dbg.h>		/* debug defines				  */
@@ -106,6 +125,9 @@ static char const IdentString[]="M34 - m34 low level driver: $Id: m34_drv.c,v 1.
 #include <MEN/ll_entry.h>   /* low level driver entry struct  */
 #include <MEN/m34_drv.h>    /* M34 driver header file         */
 
+#ifdef WINNT
+	#include <wdm.h>
+#endif
 
 /*-----------------------------------------+
 |  TYPEDEFS                                |
@@ -129,6 +151,17 @@ typedef struct
     u_int16         chBlkRd[M34_SINGLE_ENDED_MAX_CH];   /* read ch in irq and blk read */
     u_int16         chCtrl[M34_SINGLE_ENDED_MAX_CH];    /* shadow register */
     u_int32         nbrDummyRd;							/* number of dummy reads in HwBlockRead */
+	u_int32         irqMode;
+	u_int32         isrCurrCh;
+	u_int32         skip;							
+	u_int32         nbrReadCh;
+	u_int32         blkReadReqWords;
+	u_int32         blkReadGotWords;
+	u_int16			*buf;
+	OSS_SEM_HANDLE  *sem;
+#ifdef WINNT
+	LARGE_INTEGER	isrTicks; /* high-resolution time stamps  */
+#endif
 } M34_HANDLE;
 
 
@@ -151,6 +184,9 @@ typedef struct
 /*--------------------- M34 register defs/offsets ------------------------*/
 #define M34_DATA_RD           0x00  /* read converted data */
 #define M34_CTRL_WR           0x00  /* set control data  */
+#define M34_DATA_RD_START     0x02  /* read data, start conv. */
+#define M34_CTRL_START_WR     0x02  /* start conv., set control data  */
+#define M34_DATA_RD_START_INC 0x06  /* read data, start conv., incr. */
 #define M34_DATA_START_RD     0x0A  /* start conv., read data */
 #define M34_DATA_START_RD_INC 0x0E  /* start conv., read data */
 #define M34_MODID			  0xFE  /* module id register */
@@ -245,6 +281,9 @@ static int32 M34_MemCleanup( M34_HANDLE *m34Hdl )
 {
 int32       retCode;
 
+	if( m34Hdl->sem )
+		OSS_SemRemove(m34Hdl->osHdl, &m34Hdl->sem);
+
     /*--------------------------+
     | remove buffer             |
     +--------------------------*/
@@ -336,6 +375,21 @@ int32       retCode;
  *                                                     supply
  *                                                   1-no bus error (BI pin
  *                                                     must be connected to GND) 
+ *
+ *                M34_IRQ_MODE        0    0..3 (M34_IMODE_XXX defines)
+ *                                         0-legacy mode
+ *                                           read all enabled ch per irq
+ *                                           (wastes cpu time in isr)
+ *                                         1-one ch per irq mode
+ *                                           read one enabled ch per irq
+ *                                           (improved isr processing)
+ *                                         2-one ch per irq mode with irq enable/disable
+ *                                           same as mode 1 but automatically 
+ *                                           enables/disables the module interrupt   
+ *                                         3-fix mode
+ *                                           read always all ch per irq (ignores
+ *                                           M34_CH_RDBLK_IRQ) without buffer
+ *                                           (ignores RD_BUF)
  *
  *                RD_BUF/SIZE         320            buffer size in byte
  *                                                   (multiple of 2)
@@ -488,6 +542,17 @@ static int32 M34_Init
                               0,
                               &m34Hdl->nbrDummyRd,
                               "M34_DUMMY_READS",
+                              NULL );
+    if( retCode != 0 && retCode != ERR_DESC_KEY_NOTFOUND ) goto CLEANUP;
+    retCode = 0;
+
+    /*-------------------------------+
+    |  descriptor - fast irq mode    |
+    +-------------------------------*/
+    retCode = DESC_GetUInt32( descHdl,
+                              0,
+                              &m34Hdl->irqMode,
+                              "M34_IRQ_MODE",
                               NULL );
     if( retCode != 0 && retCode != ERR_DESC_KEY_NOTFOUND ) goto CLEANUP;
     retCode = 0;
@@ -675,6 +740,10 @@ static int32 M34_Init
     if ( retCode != 0 && retCode != ERR_DESC_KEY_NOTFOUND ) goto CLEANUP;
     retCode = 0;
 
+	retCode = OSS_SemCreate(osHdl, OSS_SEM_BIN, 0, &m34Hdl->sem);
+	if (retCode)
+		goto CLEANUP;
+
     /*--------------------------+
     | default hw config         |
     +--------------------------*/
@@ -847,9 +916,12 @@ static int32 M34_Write
  *
  *  M_LL_IRQ_COUNT    all      0..max      interrupt counter
  *
- *  M_MK_IRQ_ENABLE   all      0,1         0 - disables module interrupt
- *                                         1 - enables module interrupt
- *
+ *  M_MK_IRQ_ENABLE   all      0,1         irq mode M34_IMODE_LEGACY/_CHIRQ:
+ *                                          0 - disables module interrupt
+ *                                          1 - enables module interrupt
+ *                                         irq mode M34_IMODE_CHIRQ_AUTO/_FIX:
+ *                                          no operation
+ *                                          
  *
  *  SPECIAL CODES     CH       VALUES      MEANING
  *  -------------------------------------------------------------------------
@@ -860,13 +932,15 @@ static int32 M34_Write
  *
  *
  *  M34_CH_BIPOLAR    current  0,1         set mode of current channel
- *                                         M34_BIPOLAR
- *                                         M34_UNIPOLAR
+ *                                         0 (M34_UNIPOLAR) - unipolar mode
+ *                                         1 (M34_BIPOLAR)  - bipolar mode
  *
- *  M34_CH_RDBLK_IRQ  current  0,1         0- don't read channel in BlkRd/Irq
- *                                         1-read channel in BlkRd/Irq
+ *  M34_CH_RDBLK_IRQ  current  0,1         0 - don't read channel in BlkRd/Irq
+ *                                         1 - read channel in BlkRd/Irq
  *
  *  M34_DUMMY_READS   all      0..10       additional dummy reads in BlkRd/Irq
+ *
+ *  M34_IRQ_MODE      all      0..3       interrupt mode (see M34_Init)
  *
  *---------------------------------------------------------------------------
  *  Input......:  llHdl             pointer to low-level driver data structure
@@ -891,7 +965,7 @@ static int32 M34_SetStat
     M34_HANDLE *m34Hdl = (M34_HANDLE*) llHdl;
     int32       value  = (int32) value32_or_64;
 
-    DBGWRT_1((DBH, "LL - M34_SetStat: code=$%04lx data=%ld\n",code,value));
+    DBGWRT_1((DBH, "LL - M34_SetStat: code=$%04lx, ch=%d, data=%ld\n",code,ch,value));
 
     switch(code)
     {
@@ -900,17 +974,17 @@ static int32 M34_SetStat
         |  irq enable         |
         +--------------------*/
         case M_MK_IRQ_ENABLE:
-          if( value==0 )   /* disable */
-          {
-              m34Hdl->irqIsEnabled = 0;
-          }
-          else            /* enable */
-          {
-              m34Hdl->irqIsEnabled = 1;
-          }/*if*/
-          setIrqEnable( (u_int16)m34Hdl->irqIsEnabled, m34Hdl );
 
-          MWRITE_D16( m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[ch] );
+			/* irq mode without auto irq enable/disable? */
+			if ((m34Hdl->irqMode == M34_IMODE_LEGACY) ||
+				(m34Hdl->irqMode == M34_IMODE_CHIRQ)) {
+
+				setIrqEnable( (u_int16)(value == 0 ? 0 : 1), m34Hdl );
+
+				m34Hdl->isrCurrCh = 0;
+				m34Hdl->nbrReadCh = 0;
+				MWRITE_D16( m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[ch] );
+			}
           break;
 
         /*------------------+
@@ -1002,6 +1076,20 @@ static int32 M34_SetStat
           }/*if*/
           break;
 
+		/*------------------+
+		|  fast irq mode    |
+		+------------------*/
+		case M34_IRQ_MODE:
+			if ((value < 0) || (value > 3))
+			{
+				return(ERR_LL_ILL_PARAM);
+			}
+			else            /* valid */
+			{
+				m34Hdl->irqMode = value;
+			}/*if*/
+			break;
+
         /*--------------------+
         |  (unknown)          |
         +--------------------*/
@@ -1064,8 +1152,8 @@ static int32 M34_SetStat
  *                                           M34_GAIN_4, M34_GAIN_8
  *
  *  M34_CH_BIPOLAR      current  0,1         set mode of current channel
- *                                           M34_BIPOLAR
- *                                           M34_UNIPOLAR
+ *                                           0 (M34_UNIPOLAR) - unipolar mode
+ *                                           1 (M34_BIPOLAR)  - bipolar mode
  *
  *  M34_CH_RDBLK_IRQ    current  0,1         0 - channel isn't read at
  *                                               M34_BlockRead/Irq
@@ -1081,6 +1169,8 @@ static int32 M34_SetStat
  *
  *  M34_DUMMY_READS     all      0..10       additional dummy reads in
  *                                           M34_BlockRead/Irq
+ *
+ *  M34_IRQ_MODE        all      0..3        interrupt mode (see M34_Init)                                           
  *
  *---------------------------------------------------------------------------
  *  Input......:  llHdl             pointer to low-level driver data structure
@@ -1109,7 +1199,7 @@ static int32 M34_GetStat
     INT32_OR_64 *value64P  = value32_or_64P;
     u_int16 dummy;
 
-    DBGWRT_1((DBH, "LL - M34_GetStat: code=$%04lx\n",code));
+    DBGWRT_1((DBH, "LL - M34_GetStat: code=$%04lx, ch=%d\n",code,ch));
 
     switch(code)
     {
@@ -1222,6 +1312,32 @@ static int32 M34_GetStat
           *valueP = m34Hdl->nbrDummyRd;
           break;
 
+		/*------------------+
+		|   fast irq mode    |
+		+------------------*/
+		case M34_IRQ_MODE:
+			*valueP = m34Hdl->irqMode;
+			break;
+
+#ifdef WINNT
+		  /*------------------+
+		  |  isr time         |
+		  +------------------*/
+		case M34_ISR_TIME:
+		{
+			LARGE_INTEGER	freq, us; 
+			KeQueryPerformanceCounter(&freq);
+
+			us.QuadPart = m34Hdl->isrTicks.QuadPart;
+			us.QuadPart *= 1000000;
+			us.QuadPart /= freq.QuadPart;
+
+			*valueP = (int32)us.LowPart;
+			m34Hdl->isrTicks.QuadPart = 0;
+			break;
+		}
+#endif
+
         /*--------------------+
         |  (unknown)          |
         +--------------------*/
@@ -1251,10 +1367,11 @@ static int32 M34_GetStat
  *  Description:  Reads all configured channels to buffer.
  *                The read sequence is from lowest configured channel number to
  *                the highest.
- *                Supported modes:  M_BUF_USRCTRL         reads from hw
- *                                  M_BUF_RINGBUF         reads from buffer
- *                                  M_BUF_RINGBUF_OVERWR   "     "     "
- *                                  M_BUF_CURRBUF          "     "     "
+ *                Supported buffer modes:
+ *                  M_BUF_USRCTRL         reads from hw
+ *                  M_BUF_RINGBUF         reads from buffer (uses irq)
+ *                  M_BUF_RINGBUF_OVERWR    "     "     "       "
+ *                  M_BUF_CURRBUF           "     "     "       "
  *
  *                buffer structure
  *
@@ -1263,7 +1380,7 @@ static int32 M34_GetStat
  *                meaning    | CC1 |  ...  | CCN+1 |
  *                           +-----+- - - -+-------+
  *
- *                             CC1   - first configured channel ( see M34_CH_RDBLK_IRQ )
+ *                             CC1   - first configured channel (see M34_CH_RDBLK_IRQ)
  *                             CCN+1 - last configured channel
  *
  *                byte structure of value
@@ -1278,11 +1395,42 @@ static int32 M34_GetStat
  *                                         ( 0 connected to ground )
  *                  Bit 0 is zero if the measuring value is valid.
  *
+ *                The behaviour of this function depends on the interrupt mode:
+ *                M34_IMODE_LEGACY (=0): legacy mode
+ *                  - read all enabled ch per irq (wastes cpu time in isr)
+ *                  - the module interrupt is enabled/disabled with M_MK_IRQ_ENABLE
+ *                    setstat call
+ *                  - supported for compatibility with existing applications
+ *                  - not recommended for new applications
+ *
+ *                M34_IMODE_CHIRQ (=1): one ch per irq mode
+ *                  - read one enabled ch per irq (improved isr processing)
+ *                  - the module interrupt is enabled/disabled with M_MK_IRQ_ENABLE
+ *                    setstat call
+ *                  - size must be multiple of enabled channels to read x2
+ *
+ *                M34_IMODE_CHIRQ_AUTO (=2): one ch per irq mode with irq enable/disable
+ *                  - read one enabled ch per irq (improved isr processing)
+ *                  - the module interrupt is automatically enabled/disabled
+ *                    (this reduces the irq amount)
+ *                  - size must be multiple of enabled channels to read x2
+ *                  - buffer mode M_BUF_CURRBUF is not supported
+ *
+ *                M34_IMODE_FIX (=3): fix mode
+ *                  - read always all available ch per irq (ignores M34_CH_RDBLK_IRQ config)
+ *                  - the module interrupt is automatically enabled/disabled
+ *                  - size must be the number of available channels x2
+ *                  - without buffer usage (ignores RD_BUF/.. config)
+ *                  - this is the only irq mode that operates without an external trigger
+ *                     (the other irq modes with buffer mode CURRBUF or RINGBUF requires
+ *                      an external trigger signal to generate irqs)
+ *                  - this is the fastest and less cpu time consuming mode
+ *
  *---------------------------------------------------------------------------
  *  Input......:  llHdl  pointer to low-level driver data structure
  *                ch     current channel (always ignored)
  *                buf    buffer to store read values
- *                size   should be multiple of width (2)
+ *                size   byte size to read (should be multiple of 2)
  *
  *  Output.....:  nbrRdBytesP  number of read bytes
  *                return       0 | error code
@@ -1311,79 +1459,161 @@ static int32 M34_BlockRead
 
     DBGWRT_1((DBH, "LL - M34_BlockRead: entered\n"));
 
-    *nbrRdBytesP = 0;
-    bufP     = (u_int16*) buf;
-    haveRead = 0;
-    ch       = 0;
+	*nbrRdBytesP = 0;
 
-    nbrOfReads = size / M34_CH_WIDTH;
+	/*---------------------------------------------------------------------------------+
+	|  F I X   I R Q   M O D E                                                         |
+	+---------------------------------------------------------------------------------*/
+	if (m34Hdl->irqMode == M34_IMODE_FIX) {
+
+		/* one block read store the data for all available channels */
+		if ( size != 2 * m34Hdl->nbrOfChannels ){
+			DBGWRT_ERR((DBH,
+				"*** LL - M34_BlockRead: illegal byte size (M34_IMODE_FIX)\n"));
+			return ERR_LL_ILL_PARAM;
+		}
+
+		m34Hdl->isrCurrCh = 0;
+		m34Hdl->buf = (u_int16*)buf;
+		m34Hdl->skip = 1;
+		
+		/* enable irq */
+		DBGWRT_2((DBH, " enable irq\n"));
+		setIrqEnable(1, m34Hdl);
+
+		/* start, set control data */
+		MWRITE_D16(m34Hdl->ma34, M34_CTRL_START_WR, m34Hdl->chCtrl[m34Hdl->isrCurrCh]);
+
+		/* wait for data */
+		fktRetCode = OSS_SemWait(m34Hdl->osHdl, m34Hdl->sem, 100);
+		if (fktRetCode){
+			DBGWRT_ERR((DBH,
+				"*** LL - M34_BlockRead: no data gotten (fktRetCode=0x%x)\n"));
+			return fktRetCode;
+		}
+
+		*nbrRdBytesP = 2 * m34Hdl->nbrOfChannels;
+	}
+	/*---------------------------------------------------------------------------------+
+	|  I R Q   M O D E   W I T H   B U F F E R                                         |
+	+---------------------------------------------------------------------------------*/
+	else{
+		bufP     = (u_int16*) buf;
+		haveRead = 0;
+		ch       = 0;
+
+		nbrOfReads = size / M34_CH_WIDTH;
 
 
-    fktRetCode = MBUF_GetBufferMode( m34Hdl->inbuf , &bufMode );
-    if( fktRetCode != 0 && fktRetCode != ERR_MBUF_NO_BUF )
-    {
-       return( fktRetCode );
-    }/*if*/
+		fktRetCode = MBUF_GetBufferMode( m34Hdl->inbuf , &bufMode );
+		if( fktRetCode != 0 && fktRetCode != ERR_MBUF_NO_BUF )
+		{
+		   return( fktRetCode );
+		}/*if*/
 
-    switch( bufMode )
-    {
+		switch( bufMode )
+		{
 
-        case M_BUF_USRCTRL:
-           if( m34Hdl->irqIsEnabled )
-              return( ERR_LL_READ );        /* can't read ! */
+			case M_BUF_USRCTRL:
+			   if( m34Hdl->irqIsEnabled )
+				  return( ERR_LL_READ );        /* can't read ! */
 
-           while( nbrOfReads > 0 )
-           {
-               /* ch scheduling */
-               if( m34Hdl->chBlkRd[ch] )
-               {
-                   /*--------------------+
-                   |  set current ch     |
-                   +--------------------*/
-                   MWRITE_D16( m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[ch] );
+			   while( nbrOfReads > 0 )
+			   {
+				   /* ch scheduling */
+				   if( m34Hdl->chBlkRd[ch] )
+				   {
+					   /*--------------------+
+					   |  set current ch     |
+					   +--------------------*/
+					   MWRITE_D16( m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[ch] );
 
-                   /*----------------------------------+
-                   |  star conversion & rd with delay  |
-                   +----------------------------------*/
-                   for (t=0; t<=m34Hdl->nbrDummyRd; t++)						/* dummy reads min 1 */
-                       dummy   = MREAD_D16( m34Hdl->ma34, M34_DATA_START_RD );	/* dummy conversion */
-                   dummy2  = MREAD_D16( m34Hdl->ma34, M34_DATA_START_RD );		/* conversion */
-                   *bufP++ = dummy2;
+					   /*----------------------------------+
+					   |  star conversion & rd with delay  |
+					   +----------------------------------*/
+					   for (t=0; t<=m34Hdl->nbrDummyRd; t++)						/* dummy reads min 1 */
+						   dummy   = MREAD_D16( m34Hdl->ma34, M34_DATA_START_RD );	/* dummy conversion */
+					   dummy2  = MREAD_D16( m34Hdl->ma34, M34_DATA_START_RD );		/* conversion */
+					   *bufP++ = dummy2;
 
-                   nbrOfReads--;
-                   haveRead = 1;
-               }/*if*/
-               ch++;
+					   nbrOfReads--;
+					   haveRead = 1;
+				   }/*if*/
+				   ch++;
 
-               /*-----------------+
-               |  ch wrap around  |
-               +-----------------*/
-               if( (u_int32)ch == m34Hdl->nbrOfChannels )
-               {
-                   ch = 0;
-                   if( !haveRead )
-                   {
-					   DBGWRT_ERR((DBH,
-						   "*** LL - M34_BlockRead: no ch configured M34_BLK_RD_IRQ\n"));
-                       break;
-                   }/*if*/
-               }/*if*/
-           }/*while*/
+				   /*-----------------+
+				   |  ch wrap around  |
+				   +-----------------*/
+				   if( (u_int32)ch == m34Hdl->nbrOfChannels )
+				   {
+					   ch = 0;
+					   if( !haveRead )
+					   {
+						   DBGWRT_ERR((DBH,
+							   "*** LL - M34_BlockRead: no ch configured M34_BLK_RD_IRQ\n"));
+						   break;
+					   }/*if*/
+				   }/*if*/
+			   }/*while*/
 
-           /* This cast to int32 is OK, because (bufP - buf) constitutes the buffer size  *
-            * requested by the (32 bit wide) size parameter.                              */
-           *nbrRdBytesP = (int32) ((char*)bufP - (char*)buf);
-           fktRetCode   = 0; /* ovrwr ERR_MBUF_NO_BUFFER */
-           break;
+			   /* This cast to int32 is OK, because (bufP - buf) constitutes the buffer size  *
+				* requested by the (32 bit wide) size parameter.                              */
+			   *nbrRdBytesP = (int32) ((char*)bufP - (char*)buf);
+			   fktRetCode   = 0; /* ovrwr ERR_MBUF_NO_BUFFER */
+			   break;
 
-        case M_BUF_RINGBUF:
-        case M_BUF_RINGBUF_OVERWR:
-        case M_BUF_CURRBUF:
-        default:
-           fktRetCode = MBUF_Read( m34Hdl->inbuf, (u_int8*) buf, size,
-                                   nbrRdBytesP );
+			case M_BUF_RINGBUF:
+			case M_BUF_RINGBUF_OVERWR:
+			case M_BUF_CURRBUF:
+			default:
 
-    }/*switch*/
+				/* buffer irq mode with irq/ch? */
+				if ((m34Hdl->irqMode == M34_IMODE_CHIRQ) ||
+					(m34Hdl->irqMode == M34_IMODE_CHIRQ_AUTO)) {
+
+					/* the requestet byte size must be a multiple
+					   of the number of block read configured channels */
+					if (size % (2 * m34Hdl->nbrCfgCh)) {
+						DBGWRT_ERR((DBH,
+							"*** LL - M34_BlockRead: illegal byte size (M34_IMODE_CHIRQ[_AUTO])\n"));
+						return ERR_LL_ILL_PARAM;
+					}
+
+					m34Hdl->blkReadGotWords = 0;
+					m34Hdl->blkReadReqWords = size/2;
+
+					/* buffer irq mode with auto irq enable/disable? */
+					if (m34Hdl->irqMode == M34_IMODE_CHIRQ_AUTO) {
+
+						m34Hdl->isrCurrCh = 0;
+						m34Hdl->nbrReadCh = 0;
+
+						/* at least one channel must be configured for block read */
+						if (m34Hdl->nbrCfgCh == 0) {
+							DBGWRT_ERR((DBH,
+								"*** LL - M34_BlockRead: no ch configured\n"));
+							return ERR_LL_ILL_PARAM;
+						}
+
+						/* M_BUF_CURRBUF makes no sense */
+						if (bufMode == M_BUF_CURRBUF) {
+							DBGWRT_ERR((DBH,
+								"*** LL - M34_BlockRead: M_BUF_CURRBUF not supported (IMODE_CHIRQ_AUTO)\n"));
+							return ERR_LL_ILL_PARAM;
+						}
+
+						/* enable irq */
+						DBGWRT_2((DBH, " enable irq\n"));
+						setIrqEnable(1, m34Hdl);
+						MWRITE_D16(m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[m34Hdl->isrCurrCh]);
+					}
+				}
+
+			   fktRetCode = MBUF_Read( m34Hdl->inbuf, (u_int8*) buf, size,
+									   nbrRdBytesP );
+
+		}/*switch*/
+	}/*  I R Q   M O D E   W I T H   B U F F E R */
 
     return( fktRetCode );
 }/*M34_BlockRead*/
@@ -1455,62 +1685,202 @@ static int32 M34_Irq
 	int32		nbrOfBlocks;
 	int32		gotsize;
 
-    IDBGWRT_1((DBH, "LL - M34_Irq: entered\n"));
+#ifdef WINNT
+	LARGE_INTEGER	t1, t2;
+	t1 = KeQueryPerformanceCounter(NULL);
+#endif
 
-    /*-------------------------------------+
-    |  input values (configured channels)  |
-    +-------------------------------------*/
-    /* if m34Hdl->nbrCfgCh == 0, also buf is NULL and a dummy read is performed */
-    if( (buf = (u_int16*) MBUF_GetNextBuf(
-							m34Hdl->inbuf, m34Hdl->nbrCfgCh, &gotsize)) != 0 )
-    {
-        for( ch=0; ch<m34Hdl->nbrOfChannels; ch++ )
-        {
-            /* ch scheduling */
-            if( m34Hdl->chBlkRd[ch] )
-            {
-                /*--------------------+
-                |  set current ch     |
-                +--------------------*/
-                MWRITE_D16( m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[ch] );
+	/*---------------------------------------------------------------------------------+
+	| F I X   I R Q   M O D E                                                          |
+	+---------------------------------------------------------------------------------*/
+	if (m34Hdl->irqMode == M34_IMODE_FIX) {
 
-                /*----------------------------------+
-                |  start conversion & rd with delay |
-                +----------------------------------*/
-                for (t=0; t<=m34Hdl->nbrDummyRd; t++)						/* dummy reads min 1 */
-                    dummy   = MREAD_D16( m34Hdl->ma34, M34_DATA_START_RD ); /* dummy conversion */
+		IDBGWRT_1((DBH, "LL - M34_Irq: M34_IMODE_FIX\n"));
 
-                *buf++ = MREAD_D16( m34Hdl->ma34, M34_DATA_START_RD );		/* conversion */
-                nbrRdCh++;
+		if( m34Hdl->skip ){
+			/* read data and start next conversion */
+			dummy = MREAD_D16(m34Hdl->ma34, M34_DATA_RD_START_INC);
+			m34Hdl->skip--;
+		}
+		else {
+			/* read data and start next conversion */
+			m34Hdl->buf[m34Hdl->isrCurrCh] = MREAD_D16(m34Hdl->ma34, M34_DATA_RD_START_INC);
+			IDBGWRT_2((DBH, " buf[%d] = 0x%x\n",
+				m34Hdl->isrCurrCh, m34Hdl->buf[m34Hdl->isrCurrCh]));
 
-                if( (nbrRdCh < m34Hdl->nbrCfgCh)		/* read another channel ? */
-                    && ((int32)nbrRdCh == gotsize) )	/* got space full ? */
-                {
+			/* not all data read? */
+			if (m34Hdl->isrCurrCh < (m34Hdl->nbrOfChannels - 1)) {
+				m34Hdl->isrCurrCh++;
+			}
+			/* all data read */
+			else {
+				IDBGWRT_2((DBH, " all data read\n"));
+				OSS_SemSignal(m34Hdl->osHdl, m34Hdl->sem);
+				goto DISABLE_CLEANUP;
+			}
+		}
+
+		goto CLEANUP;
+	}
+
+	/*---------------------------------------------------------------------------------+
+	|  I R Q   M O D E   W I T H   B U F F E R                                         |
+	+---------------------------------------------------------------------------------*/
+
+	/* buffer irq mode without auto irq enable/disable? */
+	if ((m34Hdl->irqMode == M34_IMODE_LEGACY) ||
+		(m34Hdl->irqMode == M34_IMODE_CHIRQ)) {
+		/* at least one channel must be configured for block read */
+		if (m34Hdl->nbrCfgCh == 0) {
+			IDBGWRT_ERR((DBH,
+				"*** LL - M34_Irq: no ch configured: disable irq\n"));
+			setIrqEnable(0, m34Hdl);
+			MWRITE_D16(m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[m34Hdl->isrCurrCh]);
+		}
+	}
+	
+	/* -------------------- buffer irq mode with irq/ch? -------------------- */
+	if ((m34Hdl->irqMode == M34_IMODE_CHIRQ) ||
+		(m34Hdl->irqMode == M34_IMODE_CHIRQ_AUTO)) {
+
+		IDBGWRT_1((DBH, "LL - M34_Irq: M34_IMODE_CHIRQ[_AUTO]\n"));
+
+		/* get space for one channel */
+		if ((buf = (u_int16*)MBUF_GetNextBuf(m34Hdl->inbuf, 1, &gotsize)) != 0)
+		{
+			IDBGWRT_2((DBH, " buffer space available\n"));
+
+			/* skip unused channels */
+			while ((m34Hdl->isrCurrCh < m34Hdl->nbrOfChannels) &&
+				(m34Hdl->chBlkRd[m34Hdl->isrCurrCh] == 0)) {
+				m34Hdl->isrCurrCh++;
+
+				/* wrap around ch number */
+				if (m34Hdl->isrCurrCh == m34Hdl->nbrOfChannels)
+					m34Hdl->isrCurrCh = 0;
+			}
+
+			IDBGWRT_3((DBH, " read ch=%d\n", m34Hdl->isrCurrCh));
+
+			/* set current ch */
+			MWRITE_D16(m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[m34Hdl->isrCurrCh]);
+
+			/* dummy reads */
+			for (t = 0; t <= m34Hdl->nbrDummyRd; t++)
+				dummy = MREAD_D16(m34Hdl->ma34, M34_DATA_START_RD);
+
+			/* conversion */
+			*buf++ = MREAD_D16(m34Hdl->ma34, M34_DATA_START_RD);
+			m34Hdl->nbrReadCh++;
+			m34Hdl->isrCurrCh++;
+
+			/* all configured ch read? */
+			if (m34Hdl->nbrReadCh == m34Hdl->nbrCfgCh) {
+				IDBGWRT_3((DBH, " all configured ch read\n"));
+				/*
+				* let MBUF_Read():
+				* 1. copy data
+				* 2. wait for more data if requested
+				*/
+				MBUF_ReadyBuf(m34Hdl->inbuf);
+				m34Hdl->nbrReadCh = 0;
+				m34Hdl->isrCurrCh = 0;
+				m34Hdl->blkReadGotWords += m34Hdl->nbrCfgCh;
+
+				/* buffer irq mode with auto irq enable/disable? */
+				if (m34Hdl->irqMode == M34_IMODE_CHIRQ_AUTO) {
+					/* all requested data read? */
+					if (m34Hdl->blkReadGotWords == m34Hdl->blkReadReqWords)
+						goto DISABLE_CLEANUP;
+				}
+			}
+		}
+		/* no more buffer space (all requested date read) */
+		else
+		{
+			IDBGWRT_2((DBH, " no buffer space\n"));
+			/* reset irq cause */
+			dummy = MREAD_D16(m34Hdl->ma34, M34_DATA_START_RD); /* dummy conversion */
+		}
+		goto CLEANUP;
+	}
+
+	/* -------------------- legacy irq mode -------------------- */
+	IDBGWRT_1((DBH, "LL - M34_Irq: M34_IMODE_LEGACY\n"));
+
+	/*-------------------------------------+
+	|  input values (configured channels)  |
+	+-------------------------------------*/
+	/* if m34Hdl->nbrCfgCh == 0, also buf is NULL and a dummy read is performed */
+	if ((buf = (u_int16*)MBUF_GetNextBuf(
+		m34Hdl->inbuf, m34Hdl->nbrCfgCh, &gotsize)) != 0)
+	{
+		IDBGWRT_2((DBH, " buffer space available\n"));
+
+		for (ch = 0; ch<m34Hdl->nbrOfChannels; ch++)
+		{
+			/* ch scheduling */
+			if (m34Hdl->chBlkRd[ch])
+			{
+				/*--------------------+
+				|  set current ch     |
+				+--------------------*/
+				MWRITE_D16(m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[ch]);
+
+				/*----------------------------------+
+				|  start conversion & rd with delay |
+				+----------------------------------*/
+				for (t = 0; t <= m34Hdl->nbrDummyRd; t++)						/* dummy reads min 1 */
+					dummy = MREAD_D16(m34Hdl->ma34, M34_DATA_START_RD); /* dummy conversion */
+
+				*buf++ = MREAD_D16(m34Hdl->ma34, M34_DATA_START_RD);		/* conversion */
+				nbrRdCh++;
+
+				if ((nbrRdCh < m34Hdl->nbrCfgCh)		/* read another channel ? */
+					&& ((int32)nbrRdCh == gotsize))	/* got space full ? */
+				{
 					/* calculate missing buffer space */
-                    nbrOfBlocks = m34Hdl->nbrCfgCh - nbrRdCh;
-                    /* not enough bytes gotten - wrap around buffer */
-                    if( (buf = (u_int16*) MBUF_GetNextBuf
-                                              ( m34Hdl->inbuf,
-                                                nbrOfBlocks,
-                                                &gotsize)) == 0 )
-                    {
-                        /* wrap around failed */
-					    IDBGWRT_ERR((DBH,"*** LL - M34_Irq: wrap around failed\n"));
-                        break;
-                    }/*if*/
-                }/*if*/
-            }/*if*/
-        }/*for*/
+					nbrOfBlocks = m34Hdl->nbrCfgCh - nbrRdCh;
+					/* not enough bytes gotten - wrap around buffer */
+					if ((buf = (u_int16*)MBUF_GetNextBuf
+						(m34Hdl->inbuf,
+							nbrOfBlocks,
+							&gotsize)) == 0)
+					{
+						/* wrap around failed */
+						IDBGWRT_ERR((DBH, "*** LL - M34_Irq: wrap around failed\n"));
+						break;
+					}/*if*/
+				}/*if*/
+			}/*if*/
+		}/*for*/
 
-        MBUF_ReadyBuf( m34Hdl->inbuf );  /* blockread ready */
-    }
-    else
-    {
-       /* reset irq cause */
-       dummy   = MREAD_D16( m34Hdl->ma34, M34_DATA_START_RD ); /* dummy conversion */
-    }/*if*/
+		MBUF_ReadyBuf(m34Hdl->inbuf);  /* blockread ready */
+	}
+	else
+	{
+		IDBGWRT_2((DBH, " no buffer space\n"));
+		/* reset irq cause */
+		dummy = MREAD_D16(m34Hdl->ma34, M34_DATA_START_RD); /* dummy conversion */
+	}/*if*/
 
+	goto CLEANUP;
+
+/* -------------------- disable irq and cleanup -------------------- */
+DISABLE_CLEANUP:
+	/* disable irq */
+	IDBGWRT_2((DBH, " disable irq\n"));
+	setIrqEnable(0, m34Hdl);
+	MWRITE_D16(m34Hdl->ma34, M34_CTRL_WR, m34Hdl->chCtrl[m34Hdl->isrCurrCh]);
+
+/* -------------------- cleanup -------------------- */
+CLEANUP:
     m34Hdl->irqCount++;
+
+#ifdef WINNT
+	t2 = KeQueryPerformanceCounter(NULL);
+	m34Hdl->isrTicks.QuadPart += t2.QuadPart - t1.QuadPart;
+#endif
 
     return( LL_IRQ_UNKNOWN );
 }/*M34_Irq*/
@@ -1539,6 +1909,9 @@ static int32 M34_Irq
  *
  *  LL_INFO_IRQ
  *     arg2  u_int32 *useIrqP          1              module use interrupts
+ *
+ *  LL_INFO_LOCKMODE
+ *     arg2  u_int32 *lockModeP        LL_LOCK_CALL   process lock mode
  *
  *--------------------------------------------------------------------------
  *  Input......:  infoType          desired information
@@ -1605,6 +1978,13 @@ static int32 M34_Info
           *useIrqP = 1;
           break;
 
+		case LL_INFO_LOCKMODE:
+		{
+			u_int32 *lockModeP = va_arg(argptr, u_int32*);
+			*lockModeP = LL_LOCK_CALL;
+			break;
+		}
+
         default:
           error = ERR_LL_ILL_PARAM;
     }/*switch*/
@@ -1635,7 +2015,7 @@ static int32 M34_Info
  *  Globals....:  ---
  *
  ****************************************************************************/
-static int32 getStatBlock
+static int32 getStatBlock /* nodoc */
 (
     M34_HANDLE         *m34Hdl,
     int32              code,
@@ -1693,13 +2073,15 @@ static void setIrqEnable( u_int16 irqEnable, M34_HANDLE *m34Hdl )
 {
 u_int32 ch;
 
+	m34Hdl->irqIsEnabled = irqEnable;
+
     /* set all ch */
     for( ch = 0; ch < m34Hdl->nbrOfChannels; ch++ )
     {
          m34Hdl->chCtrl[ch] &= ~( 1 << CTRL_IRQ );
          m34Hdl->chCtrl[ch] |= ( irqEnable << CTRL_IRQ );
     }/*for*/
-}/*setBipolar*/
+}/*setIrqEnable*/
 
 
 
