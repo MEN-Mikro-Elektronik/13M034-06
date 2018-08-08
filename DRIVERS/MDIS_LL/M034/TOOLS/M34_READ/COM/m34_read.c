@@ -29,8 +29,6 @@
  *---------------------------------------------------------------------------
  * (c) Copyright 1998 by MEN mikro elektronik GmbH, Nuernberg, Germany 
  ****************************************************************************/
- 
-static const char RCSid[]="$Header: /dd2/CVSR/COM/DRIVERS/MDIS_LL/M034/TOOLS/M34_READ/COM/m34_read.c,v 1.3 2009/10/19 16:21:04 KSchneider Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>

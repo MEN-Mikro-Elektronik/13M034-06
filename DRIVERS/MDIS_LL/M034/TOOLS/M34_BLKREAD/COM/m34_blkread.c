@@ -40,8 +40,6 @@
  *---------------------------------------------------------------------------
  * (c) Copyright 1998 by MEN mikro elektronik GmbH, Nuernberg, Germany 
  ****************************************************************************/
- 
-static const char RCSid[]="$Header: r:/./COM/DRIVERS/MDIS_LL/M034/TOOLS/M34_BLKREAD/COM/m34_blkread.c,v 1.6 2018/06/11 15:53:17 DPfeuffer Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -424,8 +422,12 @@ int main( int argc, char *argv[])
 			else
 				printf("current: (%ld bytes)\n",gotsize);
 			
-			for (bp=bp0=blkbuf; bp0<bmax; bp0+=16) {   
+			for (bp=bp0=blkbuf; bp0<bmax; bp0+=16) {
+#ifndef MENTYPS_64BIT
 				printf("%08x+%04x: ",(int32)blkbuf, (int16)(bp-blkbuf));
+#else
+				printf("%016llx+%08x: ",(int64)blkbuf, (int32)(bp-blkbuf));
+#endif
 				
 				for (bp=bp0,n=0; n<16; n+=2, bp+=2) {	/* word aligned */
 					/* voltage */

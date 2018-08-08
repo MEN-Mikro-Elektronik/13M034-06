@@ -68,11 +68,11 @@ static char *RCSid="$Id: m34_simp.c,v 1.9 2009/10/19 16:22:03 KSchneider Exp $";
 /*--------------------------------------+
 |   DEFINES                             |
 +--------------------------------------*/
-static const int32 OFF = 0;
-static const int32 ON  = 1;
+#define OFF 0
+#define ON  1
 
-static const int32 T_OK = 0;
-static const int32 T_ERROR = 1;
+#define T_OK    0
+#define T_ERROR 1
 
 /*--------------------------------------+
 |   PROTOTYPES                          |
