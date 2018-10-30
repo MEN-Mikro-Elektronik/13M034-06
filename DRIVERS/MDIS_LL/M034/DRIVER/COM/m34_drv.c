@@ -42,71 +42,23 @@
  *     Required: OSS, DESC, DBG, ID, MBUF libraries
  *     Switches: _ONE_NAMESPACE_PER_DRIVER_
  *
- *-------------------------------[ History ]---------------------------------
- *
- * $Log: m34_drv.c,v $
- * Revision 1.15  2018/06/11 15:48:45  DPfeuffer
- * R: fast cpus wasting too much time in isr
- * M: three additional isr modes implemented
- *
- * Revision 1.14  2009/10/19 15:43:11  KSchneider
- * R: driver ported to MDIS5, new MDIS_API and men_typs
- * M: for backward compatibility to MDIS4 optionally define new types
- *
- * Revision 1.13  2004/02/16 13:55:56  dpfeuffer
- * cast for m_read added
- *
- * Revision 1.12  2003/10/20 11:22:02  kp
- * made all driver functions static
- *
- * Revision 1.11  1999/07/21 14:52:37  Franke
- * cosmetics
- *
- * Revision 1.10  1998/12/21 14:10:04  see
- * M34_Init: M34_BIPOLAR scanning was wrong (always ch=0 was read)
- *
- * Revision 1.9  1998/12/15 10:30:08  Schmidt
- * M34_Irq() : check for wrap around buffer was wrong
- * M34_SetStat(M34_CH_RDBLK_IRQ) : calculation of nbrCfgCh was wrong
- *
- * Revision 1.8  1998/08/04 11:54:54  Schmidt
- * M34_SetStat(M_LL_CH_DIR) : return ERR_LL_ILL_DIR instead of ERR_LL_ILL_PARAM
- * M34_Write()      : return ERR_LL_ILL_FUNC instead of ERR_LL_ILL_DIR
- * M34_BlockWrite() : return ERR_LL_ILL_FUNC instead of ERR_LL_ILL_DIR
- *
- * Revision 1.7  1998/08/04 11:15:33  Schmidt
- * M34_GetStat(): M_LL_ID_SIZE added
- * M34_Info(): LL_INFO_ADDRSPACE: addrSizeP=0x100 instead of 0xff
- * idFuncTbl MBUF_Ident added
- * idFuncTbl is now located in LL_HANDLE
- * idFuncTbl is now initialized in Init
- * IdFuncTbl() removed
- *
- * Revision 1.6  1998/07/09 15:17:38  see
- * RCSid was wrong type
- *
- * Revision 1.5  1998/07/03 14:49:06  Schmidt
- * descriptor key M34_PREVENT_BUSERR added
- * module id for M35 module added to support M35 modules
- *
- * Revision 1.4  1998/06/30 16:44:46  Schmidt
- * update to MDIS 4.1
- *
- * Revision 1.3  1998/04/14 11:17:25  Franke
- * cosmectics
- *
- * Revision 1.2  1998/03/20 13:39:45  franke
- * status code M34_GAIN    => M34_CH_GAIN
- *             M34_BIPOLAR => M34_CH_BIPOLAR
- * parameter   M34_IS_BIPOLAR  => M34_BIPOLAR
- *             M34_IS_UNIPOLAR => M34_UNIPOLAR changed
- *
- * Revision 1.1  1998/02/19 16:37:52  franke
- * Added by mcvs
- *
  *---------------------------------------------------------------------------
  * (c) Copyright 1995-2015 by MEN mikro elektronik GmbH, Nuernberg, Germany
  ****************************************************************************/
+/*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 static char const IdentString[]="M34 - m34 low level driver: $Id: m34_drv.c,v 1.15 2018/06/11 15:48:45 DPfeuffer Exp $";
 

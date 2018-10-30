@@ -13,37 +13,23 @@
  *     Switches: _ONE_NAMESPACE_PER_DRIVER_
  *               _LL_DRV_
  *
- *-------------------------------[ History ]---------------------------------
- *
- * $Log: m34_drv.h,v $
- * Revision 1.6  2018/06/11 15:53:19  DPfeuffer
- * R: introduction of three additional isr modes
- * M: add support for isr modes
- *
- * Revision 1.5  2009/10/19 18:10:05  KSchneider
- * R: driver ported to MDIS5, new MDIS_API and men_typs
- * M: for backward compatibility to MDIS4 optionally define new types
- *
- * Revision 1.4  2003/10/20 11:22:28  kp
- * removed driver functions (now static)
- * Support swapped variant
- *
- * Revision 1.3  1998/12/15 10:30:53  Schmidt
- * macro M34_CALC_VOLTAGE and M34_CALC_CURRENT added
- * macro M34_UCALC_BIPOLAR and M34_UCALC_UNIPOLAR bugfix
- *
- * Revision 1.2  1998/03/20 13:41:11  franke
- * status code M34_GAIN    => M34_CH_GAIN
- *             M34_BIPOLAR => M34_CH_BIPOLAR
- * parameter   M34_IS_BIPOLAR  => M34_BIPOLAR
- *             M34_IS_UNIPOLAR => M34_UNIPOLAR changed
- *
- * Revision 1.1  1998/02/18 12:19:17  franke
- * Added by mcvs
- *
  *---------------------------------------------------------------------------
  * (c) Copyright 1997 by MEN mikro elektronik GmbH, Nuernberg, Germany
  ****************************************************************************/
+/*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 #ifndef _M34_LLDRV_H
 #  define M34_LLDRV_H
 

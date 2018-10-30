@@ -13,33 +13,23 @@
  *     Required: Libraries: mdis_api, usr_oss, usr_utl
  *     Switches: -
  *
- *-------------------------------[ History ]---------------------------------
- *
- * $Log: m34_blkread.c,v $
- * Revision 1.6  2018/06/11 15:53:17  DPfeuffer
- * R: introduction of three additional isr modes
- * M: add support for isr modes
- *
- * Revision 1.5  2016/07/14 17:19:25  atlbitbucket
- * Stash autocheckin
- *
- * Revision 1.4  2009/10/19 16:20:15  KSchneider
- * R: driver ported to MDIS5, new MDIS_API and men_typs
- * M: for backward compatibility to MDIS4 optionally define new types
- *
- * Revision 1.3  2003/10/20 11:22:26  kp
- * made internal functions static
- *
- * Revision 1.2  1998/12/21 14:10:08  see
- * install always signals (for handling deadly signals)
- * print always signal statistics
- *
- * Revision 1.1  1998/12/15 10:30:35  Schmidt
- * Initial Revision
- *
  *---------------------------------------------------------------------------
  * (c) Copyright 1998 by MEN mikro elektronik GmbH, Nuernberg, Germany 
  ****************************************************************************/
+/*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include <stdio.h>
 #include <stdlib.h>

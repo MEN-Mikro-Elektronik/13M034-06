@@ -14,44 +14,23 @@
  *     Required: MDIS user interface library
  *     Switches: NO_MAIN_FUNC	(for systems with one namespace)
  *
- *-------------------------------[ History ]---------------------------------
- *
- * $Log: m34_simp.c,v $
- * Revision 1.9  2009/10/19 16:22:03  KSchneider
- * R: driver ported to MDIS5, new MDIS_API and men_typs
- * M: for backward compatibility to MDIS4 optionally define new types
- *
- * Revision 1.8  2003/10/20 11:22:18  kp
- * made internal functions static
- *
- * Revision 1.7  1999/07/21 14:32:59  Franke
- * cosmetics
- *
- * Revision 1.6  1998/12/15 10:30:19  Schmidt
- * parameter 'res' for bit resolution added (for M35 support)
- * function showVolt() removed, use macro M34_CALC_VOLTAGE
- * cosmetics
- *
- * Revision 1.5  1998/07/09 15:23:33  see
- * setstat removed (setting debug level 2)
- * error checks were wrong: MDIS calls must be checked for <0
- *
- * Revision 1.4  1998/07/03 14:49:18  Schmidt
- * includes for VxWorks removed, new define NO_MAIN_FUNC,
- * check if the readed values are valid added, cosmetics
- *
- * Revision 1.3  1998/04/14 11:10:29  Franke
- * conflictes due to merge resolved
- *
- * Revision 1.2  1998/02/23 11:53:47  Schmidt
- * showVolt() : float volt -> double volt
- *
- * Revision 1.1  1998/02/19 16:38:28  franke
- * Added by mcvs
- *
  *---------------------------------------------------------------------------
  * (c) Copyright 1998 by MEN mikro elektronik GmbH, Nuernberg, Germany
  ****************************************************************************/
+/*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 static char *RCSid="$Id: m34_simp.c,v 1.9 2009/10/19 16:22:03 KSchneider Exp $";
 

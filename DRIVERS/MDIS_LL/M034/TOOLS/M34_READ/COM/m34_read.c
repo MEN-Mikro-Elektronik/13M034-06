@@ -13,22 +13,23 @@
  *     Required: Libraries: mdis_api, usr_oss, usr_utl
  *     Switches: -
  *
- *-------------------------------[ History ]---------------------------------
- *
- * $Log: m34_read.c,v $
- * Revision 1.3  2009/10/19 16:21:04  KSchneider
- * R: driver ported to MDIS5, new MDIS_API and men_typs
- * M: for backward compatibility to MDIS4 optionally define new types
- *
- * Revision 1.2  2003/10/20 11:22:22  kp
- * made internal functions static
- *
- * Revision 1.1  1998/12/15 10:30:28  Schmidt
- * Initial Revision
- *
  *---------------------------------------------------------------------------
  * (c) Copyright 1998 by MEN mikro elektronik GmbH, Nuernberg, Germany 
  ****************************************************************************/
+/*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 2 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
