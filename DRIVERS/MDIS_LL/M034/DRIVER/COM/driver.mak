@@ -7,28 +7,21 @@
 #    Description: makefile descriptor file for common
 #                 modules MDIS 4.0   e.g. low level driver
 #
-#---------------------------------[ History ]---------------------------------
-#
-#   $Log: driver.mak,v $
-#   Revision 1.5  2003/10/20 11:21:59  kp
-#   cosmetics
-#
-#   Revision 1.4  1998/07/09 15:17:27  see
-#   MAK_LIBS were in wrong order
-#   Header keyword removed
-#
-#   Revision 1.3  1998/06/30 16:44:41  Schmidt
-#   dbg.h and dbg library added, cosmetics
-#
-#   Revision 1.2  1998/02/23 11:53:40  Schmidt
-#   id.lib instead modcom.lib
-#
-#   Revision 1.1  1998/02/19 16:37:48  franke
-#   Added by mcvs
-#
 #-----------------------------------------------------------------------------
-#   (c) Copyright 1997 by MEN mikro elektronik GmbH, Nuernberg, Germany
+#   Copyright (c) 1997-2019, MEN Mikro Elektronik GmbH
 #*****************************************************************************
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MAK_NAME=m34
 
