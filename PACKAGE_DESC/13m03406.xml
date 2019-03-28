@@ -84,30 +84,30 @@
 			</choises>
 		</setting>
 		<setting>
-      <name>M34_IRQ_MODE</name>
-      <description>Irq mode (for M34_BlockRead)</description>
-      <type>U_INT32</type>
-      <defaultvalue>0</defaultvalue>
-      <choises>
-        <choise>
-          <value>0</value>
-          <description>Legacy mode: read all enabled ch per irq (wastes cpu time in isr)</description>
-        </choise>
-        <choise>
-          <value>1</value>
-          <description>One ch per irq mode: read one enabled ch per irq (improved isr processing)</description>
-        </choise>
-        <choise>
-          <value>2</value>
-          <description>One ch per irq mode with irq enable/disable: same as mode 1 but automatically enables/disables the module interrupt</description>
-        </choise>
-        <choise>
-          <value>3</value>
-          <description>Fix mode: read always all ch per irq (ignores M34_CH_RDBLK_IRQ) without buffer (ignores RD_BUF)</description>
-        </choise>
-      </choises>
-    </setting>
-    <settingsubdir>
+			<name>M34_IRQ_MODE</name>
+			<description>Irq mode (for M34_BlockRead)</description>
+			<type>U_INT32</type>
+			<defaultvalue>0</defaultvalue>
+			<choises>
+				<choise>
+					<value>0</value>
+					<description>Legacy mode: read all enabled ch per irq (wastes cpu time in isr)</description>
+				</choise>
+				<choise>
+					<value>1</value>
+					<description>One ch per irq mode: read one enabled ch per irq (improved isr processing)</description>
+				</choise>
+				<choise>
+					<value>2</value>
+					<description>One ch per irq mode with irq enable/disable: same as mode 1 but automatically enables/disables the module interrupt</description>
+				</choise>
+				<choise>
+					<value>3</value>
+					<description>Fix mode: read always all ch per irq (ignores M34_CH_RDBLK_IRQ) without buffer (ignores RD_BUF)</description>
+				</choise>
+			</choises>
+		</setting>
+		<settingsubdir>
 			<name>RD_BUF</name>
 			<setting>
 				<name>MODE</name>
