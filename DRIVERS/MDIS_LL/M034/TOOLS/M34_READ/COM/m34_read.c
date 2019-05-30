@@ -5,8 +5,6 @@
  ****************************************************************************
  *  
  *       Author: ds
- *        $Date: 2009/10/19 16:21:04 $
- *    $Revision: 1.3 $
  *
  *  Description: Universal tool to read M34/M35 channels
  *
@@ -39,6 +37,8 @@
 #include <MEN/usr_utl.h>
 #include <MEN/mdis_api.h>
 #include <MEN/m34_drv.h>
+
+static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 
 /*--------------------------------------+
 |   PROTOTYPES                          |
@@ -80,7 +80,7 @@ static void usage(void)
 	printf("                  2 = hex and ampere (only for gain factor x8)\n");
 	printf("    -l           loop mode                   [no]\n");
 	printf("\n");
-	printf("(c) 1998 by MEN mikro elektronik GmbH\n\n");
+	printf("Copyright (c) 1998-2019, MEN Mikro Elektronik GmbH\n%s\n", IdentString);
 }
 
 /********************************* main *************************************

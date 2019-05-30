@@ -5,8 +5,6 @@
  ****************************************************************************
  *  
  *       Author: ds
- *        $Date: 2018/06/11 15:53:17 $
- *    $Revision: 1.6 $
  *
  *  Description: Universal tool to read M34/M35 channels (blockwise) 
  *
@@ -39,6 +37,8 @@
 #include <MEN/usr_utl.h>
 #include <MEN/mdis_api.h>
 #include <MEN/m34_drv.h>
+
+static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 
 /*--------------------------------------+
 |   GLOBALS                             |
@@ -115,7 +115,7 @@ static void usage(void)
 	printf("    _____________miscellaneous settings_________________________\n");
 	printf("    -l           loop mode                            [no]      \n");
 	printf("                                                                \n");
-	printf("(c) 1998-2015 by MEN mikro elektronik GmbH                    \n\n");
+	printf("Copyright (c) 1998-2019, MEN Mikro Elektronik GmbH \n%s\n", IdentString);
 }
 
 /********************************* main *************************************

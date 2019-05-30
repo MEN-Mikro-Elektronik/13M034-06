@@ -1,12 +1,9 @@
 #***************************  M a k e f i l e  *******************************
 #
 #         Author: uf
-#          $Date: 2003/10/20 11:22:16 $
-#      $Revision: 1.2 $
-#        $Header: /dd2/CVSR/COM/DRIVERS/MDIS_LL/M034/EXAMPLE/M34_SIMP/COM/program.mak,v 1.2 2003/10/20 11:22:16 kp Exp $
 #
 #    Description: makefile descriptor file for common
-#                 modules MDIS 4.x   e.g. low level driver
+#                 modules  e.g. low level driver
 #
 #-----------------------------------------------------------------------------
 #   Copyright (c) 1998-2019, MEN Mikro Elektronik GmbH
@@ -25,6 +22,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MAK_NAME=m34_simp
+# the next line is updated during the MDIS installation
+STAMPED_REVISION="13M034-06_02_05-2-g6da0d69-dirty_2019-05-10"
+
+DEF_REVISION=MAK_REVISION=$(STAMPED_REVISION)
+MAK_SWITCH=$(SW_PREFIX)$(DEF_REVISION)
 
 MAK_LIBS=$(LIB_PREFIX)$(MEN_LIB_DIR)/mdis_api$(LIB_SUFFIX)    \
          $(LIB_PREFIX)$(MEN_LIB_DIR)/usr_oss$(LIB_SUFFIX)     \

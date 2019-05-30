@@ -2,9 +2,7 @@
  *
  *         Name: m34_driver.h
  *
- *      $Author: DPfeuffer $
- *        $Date: 2018/06/11 15:53:19 $
- *    $Revision: 1.6 $
+ *      Author: DPfeuffer 
  *
  *  Description: Header file for M34 driver modules
  *               - M34 specific status codes

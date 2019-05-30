@@ -1,8 +1,6 @@
 #***************************  M a k e f i l e  *******************************
 #
 #         Author: kp
-#          $Date: 2003/10/20 11:22:01 $
-#      $Revision: 1.1 $
 #
 #    Description: Makefile definitions for the M58 driver (swapped variant)
 #
@@ -23,8 +21,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MAK_NAME=m34_sw
+# the next line is updated during the MDIS installation
+STAMPED_REVISION="13M034-06_02_05-2-g6da0d69-dirty_2019-05-10"
+
+DEF_REVISION=MAK_REVISION=$(STAMPED_REVISION)
 
 MAK_SWITCH=$(SW_PREFIX)MAC_MEM_MAPPED \
+		$(SW_PREFIX)$(DEF_REVISION) \
 		   $(SW_PREFIX)MAC_BYTESWAP \
 		   $(SW_PREFIX)M34_VARIANT=M34_SW \
 		   $(SW_PREFIX)ID_SW

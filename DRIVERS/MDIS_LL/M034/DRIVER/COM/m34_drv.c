@@ -4,8 +4,6 @@
  *      Project: M34 module driver
  *
  *       Author: uf
- *        $Date: 2018/06/11 15:48:45 $
- *    $Revision: 1.15 $
  *
  *  Description: Low level driver for M34/M35 modules
  *
@@ -60,8 +58,6 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-static char const IdentString[]="M34 - m34 low level driver: $Id: m34_drv.c,v 1.15 2018/06/11 15:48:45 DPfeuffer Exp $";
-
 #include <MEN/men_typs.h>   /* system dependend definitions   */
 #include <MEN/dbg.h>		/* debug defines				  */
 #include <MEN/oss.h>        /* os services                    */
@@ -76,6 +72,8 @@ static char const IdentString[]="M34 - m34 low level driver: $Id: m34_drv.c,v 1.
 #include <MEN/ll_defs.h>    /* low level driver definitions   */
 #include <MEN/ll_entry.h>   /* low level driver entry struct  */
 #include <MEN/m34_drv.h>    /* M34 driver header file         */
+
+static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 
 #ifdef WINNT
 	#include <wdm.h>

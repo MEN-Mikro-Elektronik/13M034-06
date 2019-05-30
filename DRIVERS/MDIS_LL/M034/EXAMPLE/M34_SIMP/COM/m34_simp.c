@@ -5,8 +5,6 @@
  ****************************************************************************
  *  
  *       Author: uf
- *        $Date: 2009/10/19 16:22:03 $
- *    $Revision: 1.9 $
  *
  *  Description: Simple example program for the M34 driver.
  *               Configure and read all channels from M34 or M35 module.
@@ -32,7 +30,6 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-static char *RCSid="$Id: m34_simp.c,v 1.9 2009/10/19 16:22:03 KSchneider Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +40,8 @@ static char *RCSid="$Id: m34_simp.c,v 1.9 2009/10/19 16:22:03 KSchneider Exp $";
 #include <MEN/mdis_err.h>
 
 #include <MEN/m34_drv.h>
+
+static const char IdentString[]=MENT_XSTR(MAK_REVISION);
 
 /*--------------------------------------+
 |   DEFINES                             |
@@ -134,7 +133,7 @@ static int m34_simple( char *DeviceName, int32 res )
     u_int16 val;
 	double	volt;
 
-    printf("\n%s\n\n", RCSid);
+    printf("\n%s\n\n", IdentString);
     if( (fd = M_open(DeviceName)) < 0 ) goto M34_TESTERR;
 
     /*----------------------------+
