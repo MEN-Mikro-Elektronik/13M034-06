@@ -13,7 +13,7 @@
  *     Switches: NO_MAIN_FUNC	(for systems with one namespace)
  *
  *---------------------------------------------------------------------------
- * Copyright (c) 1998-2019, MEN Mikro Elektronik GmbH
+ * Copyright 1998-2019, MEN Mikro Elektronik GmbH
  ****************************************************************************/
 /*
 * This program is free software: you can redistribute it and/or modify
